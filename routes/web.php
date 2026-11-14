@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CashFlowController;
+use App\Http\Controllers\CoopController;
 use App\Http\Controllers\DailyRecordController;
 use App\Http\Controllers\FeedInventoryController;
 use App\Http\Controllers\FlockController;
@@ -69,6 +70,9 @@ Route::middleware('auth')->group(function () {
 
         // Modul Arus Kas Operasional (Cash Flow)
         Route::resource('cash-flows', CashFlowController::class)->only(['index', 'store']);
+
+        // Modul Master Unit & Lokasi Kandang
+        Route::resource('coops', CoopController::class)->only(['index', 'store', 'update', 'destroy']);
 
         // Modul Manajemen Karyawan / Pekerja (HRD)
         Route::resource('workers', WorkerController::class)->only(['index', 'store', 'update', 'destroy']);

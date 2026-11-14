@@ -1,10 +1,10 @@
-@extends('layouts.print')
+@extends('layouts.print', ['coop' => $coop ?? null])
 
 @section('title', 'Laporan Audit Mutasi Gudang Pakan')
 
 @section('content')
     <div class="doc-title">LAPORAN AUDIT MUTASI GUDANG PAKAN</div>
-    <div class="doc-subtitle">Total {{ $records->count() }} transaksi tercatat dalam sistem</div>
+    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Total {{ $records->count() }} transaksi tercatat dalam sistem</div>
 
     <!-- KPI Summary -->
     <div class="kpi-grid">

@@ -1,4 +1,4 @@
-@extends('layouts.print')
+@extends('layouts.print', ['coop' => $coop ?? $flock->coop])
 
 @section('title', 'Laporan Akhir Panen & P&L — ' . $flock->name)
 

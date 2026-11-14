@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coop;
 use App\Models\Flock;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,9 +18,9 @@ class FlockController extends Controller
         $user = $request->user();
 
         if ($user->isOwner()) {
-            $flocks = Flock::with('worker')->latest()->get();
+            $flocks = Flock::with(['worker', 'coop'])->latest()->get();
         } else {
-            $flocks = Flock::with('worker')
+            $flocks = Flock::with(['worker', 'coop'])
                 ->where('worker_id', $user->id)
                 ->latest()
                 ->get();
@@ -39,8 +40,9 @@ class FlockController extends Controller
         Gate::authorize('create', Flock::class);
 
         $workers = User::where('role', 'worker')->get();
+        $coops = Coop::all();
 
-        return view('flocks.create', compact('workers'));
+        return view('flocks.create', compact('workers', 'coops'));
     }
 
     /**
@@ -51,6 +53,7 @@ class FlockController extends Controller
         Gate::authorize('create', Flock::class);
 
         $validated = $request->validate([
+            'coop_id' => 'nullable|exists:coops,id',
             'name' => 'required|string|max:255',
             'breed' => 'required|string|max:255',
             'start_date' => 'required|date',
@@ -166,8 +169,9 @@ class FlockController extends Controller
         Gate::authorize('update', $flock);
 
         $workers = User::where('role', 'worker')->get();
+        $coops = Coop::all();
 
-        return view('flocks.edit', compact('flock', 'workers'));
+        return view('flocks.edit', compact('flock', 'workers', 'coops'));
     }
 
     /**
@@ -178,6 +182,7 @@ class FlockController extends Controller
         Gate::authorize('update', $flock);
 
         $validated = $request->validate([
+            'coop_id' => 'nullable|exists:coops,id',
             'name' => 'required|string|max:255',
             'breed' => 'required|string|max:255',
             'start_date' => 'required|date',

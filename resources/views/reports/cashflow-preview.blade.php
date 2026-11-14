@@ -1,10 +1,10 @@
-@extends('layouts.print')
+@extends('layouts.print', ['coop' => $coop ?? null])
 
 @section('title', 'Laporan Arus Kas')
 
 @section('content')
     <div class="doc-title">LAPORAN ARUS KAS OPERASIONAL</div>
-    <div class="doc-subtitle">Periode: {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->last()->transaction_date)->format('d M Y') : '-' }} — {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->first()->transaction_date)->format('d M Y') : '-' }}</div>
+    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Periode: {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->last()->transaction_date)->format('d M Y') : '-' }} — {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->first()->transaction_date)->format('d M Y') : '-' }}</div>
 
     <!-- KPI Summary -->
     <div class="kpi-grid">

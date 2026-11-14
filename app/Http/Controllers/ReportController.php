@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashFlow;
+use App\Models\Coop;
 use App\Models\FeedInventory;
 use App\Models\Flock;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -101,6 +102,8 @@ class ReportController extends Controller
      */
     public function dailyRecordPreview(Flock $flock)
     {
+        $flock->load('coop');
+        $coop = $flock->coop;
         $dailyRecords = $flock->dailyRecords()->orderBy('record_date', 'asc')->get();
 
         $totalMortality = $dailyRecords->sum('mortality') + $dailyRecords->sum('culling');
@@ -110,7 +113,7 @@ class ReportController extends Controller
         $livePopulation = max(0, $flock->initial_population - $totalMortality);
 
         return view('reports.daily-record-preview', compact(
-            'flock', 'dailyRecords', 'totalMortality', 'totalFeed', 'livePopulation'
+            'flock', 'coop', 'dailyRecords', 'totalMortality', 'totalFeed', 'livePopulation'
         ));
     }
 
@@ -119,6 +122,7 @@ class ReportController extends Controller
      */
     public function cashFlowPreview()
     {
+        $coop = Coop::where('is_headquarters', true)->first();
         $records = CashFlow::orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
             ->get();
@@ -127,7 +131,7 @@ class ReportController extends Controller
         $total_out = CashFlow::where('type', 'out')->sum('amount');
         $balance = $total_in - $total_out;
 
-        return view('reports.cashflow-preview', compact('records', 'total_in', 'total_out', 'balance'));
+        return view('reports.cashflow-preview', compact('coop', 'records', 'total_in', 'total_out', 'balance'));
     }
 
     /**
@@ -135,6 +139,7 @@ class ReportController extends Controller
      */
     public function inventoryAuditPreview()
     {
+        $coop = Coop::where('is_headquarters', true)->first();
         $records = FeedInventory::with('flock')
             ->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
@@ -146,6 +151,6 @@ class ReportController extends Controller
             ->selectRaw('SUM(quantity_kg * price_per_kg) as total')
             ->value('total') ?? 0;
 
-        return view('reports.inventory-audit-preview', compact('records', 'totalIn', 'totalOut', 'totalValue'));
+        return view('reports.inventory-audit-preview', compact('coop', 'records', 'totalIn', 'totalOut', 'totalValue'));
     }
 }

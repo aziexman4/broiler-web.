@@ -1,4 +1,4 @@
-@extends('layouts.print')
+@extends('layouts.print', ['coop' => $coop ?? $payroll->flock?->coop])
 
 @section('title', 'Slip Gaji — ' . $payroll->user->name)
 
@@ -66,24 +66,29 @@
     </table>
 
     <div style="margin-top:20px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:9px;color:#64748b;line-height:1.6">
-        <strong>Catatan:</strong> Slip gaji ini digenarasi secara otomatis oleh sistem BroilerApp PRO. Bonus performa dihitung berdasarkan Index Performansi (IP) kandang yang ditugaskan. Jika IP > 300, pekerja berhak mendapatkan bonus sebesar Rp 500.000. Slip ini berlaku sebagai bukti pembayaran yang sah.
+        <strong>Catatan Skema Bonus Performa (IP):</strong> Bonus performa dihitung dari persentase gaji pokok berdasarkan capaian Indeks Performa (IP) kandang: <strong>IP ≥ 400 (20%) | IP 350–399 (15%) | IP 300–349 (10%) | IP < 300 (0%)</strong>. Slip ini berlaku sebagai bukti pembayaran yang sah.
     </div>
 @endsection
 
 @section('signature')
+    @php
+        $signCoop = $coop ?? $payroll->flock?->coop ?? \App\Models\Coop::where('is_headquarters', true)->first();
+        $managerName = $signCoop && $signCoop->manager_name ? $signCoop->manager_name : 'Pemilik / Manajemen';
+        $unitName = $signCoop && $signCoop->name ? $signCoop->name : 'Peternakan Broiler Hanau';
+    @endphp
     <div style="display:flex;justify-content:space-between;margin-top:40px">
         <div style="width:200px;text-align:center;font-size:10px">
             <div>Penerima,</div>
-            <div class="font-bold" style="margin-top:4px">Pekerja</div>
+            <div class="font-bold" style="margin-top:4px">Pekerja Kandang</div>
             <div style="height:60px"></div>
             <div class="font-bold">( {{ $payroll->user->name }} )</div>
         </div>
-        <div style="width:200px;text-align:center;font-size:10px">
+        <div style="width:220px;text-align:center;font-size:10px">
             <div>Mengetahui,</div>
-            <div class="font-bold" style="margin-top:4px">Pemilik / Manajemen</div>
+            <div class="font-bold" style="margin-top:4px">Kepala Unit / Penanggung Jawab</div>
             <div style="height:60px"></div>
-            <div class="font-bold">( _______________________ )</div>
-            <div style="font-size:9px;color:#64748b;margin-top:2px">SmartCoop Solutions Pro</div>
+            <div class="font-bold">( {{ $managerName }} )</div>
+            <div style="font-size:9px;color:#64748b;margin-top:2px">{{ $unitName }}</div>
         </div>
     </div>
 @endsection

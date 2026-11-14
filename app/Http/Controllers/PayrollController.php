@@ -173,8 +173,9 @@ class PayrollController extends Controller
      */
     public function payslipPreview(Payroll $payroll)
     {
-        $payroll->load(['user', 'flock']);
+        $payroll->load(['user', 'flock.coop']);
+        $coop = $payroll->flock?->coop;
 
-        return view('reports.payslip-preview', compact('payroll'));
+        return view('reports.payslip-preview', compact('payroll', 'coop'));
     }
 }

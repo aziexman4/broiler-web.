@@ -46,6 +46,15 @@
                     Enterprise
                 </div>
 
+                <!-- Unit & Lokasi Kandang -->
+                <a href="{{ route('coops.index') }}" 
+                   class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 {{ request()->routeIs('coops.*') ? 'bg-indigo-600 text-white shadow-md font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+                    <svg class="w-5 h-5 me-3 text-slate-400 {{ request()->routeIs('coops.*') ? 'text-white' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Unit & Lokasi Kandang
+                </a>
+
                 <!-- Analitik & Benchmarking -->
                 <a href="{{ route('analytics.index') }}" 
                    class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 {{ request()->routeIs('analytics.*') ? 'bg-indigo-600 text-white shadow-md font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
@@ -190,6 +199,11 @@
                 <div class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     Enterprise
                 </div>
+                <a href="{{ route('coops.index') }}" 
+                   class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('coops.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
+                    Unit & Lokasi Kandang
+                </a>
+
                 <a href="{{ route('analytics.index') }}" 
                    class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('analytics.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
                     Analitik & Benchmarking

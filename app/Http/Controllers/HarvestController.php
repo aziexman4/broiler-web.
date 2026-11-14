@@ -166,7 +166,8 @@ class HarvestController extends Controller
     {
         Gate::authorize('view', $flock);
 
-        $flock->load(['dailyRecords', 'harvests']);
+        $flock->load(['coop', 'dailyRecords', 'harvests']);
+        $coop = $flock->coop;
         $harvest = $flock->harvests()->latest('harvest_date')->first();
 
         $dailyRecords = $flock->dailyRecords;
@@ -209,7 +210,7 @@ class HarvestController extends Controller
         $bepPricePerKg = $totalHarvestWeight > 0 ? round($totalExpenses / $totalHarvestWeight, 2) : 0;
 
         return view('reports.harvest-preview', compact(
-            'flock', 'harvest', 'livePopulation', 'totalMortality', 'totalCulling', 
+            'flock', 'coop', 'harvest', 'livePopulation', 'totalMortality', 'totalCulling', 
             'totalFeed', 'fcr', 'avgWeight', 'livability', 'harvestAge', 'ip',
             'docPrice', 'totalDocCost', 'totalFeedCost', 'grossRevenue', 'laborCost',
             'cogs', 'totalExpenses', 'trueNetProfit', 'profitMargin', 'bepPricePerKg'

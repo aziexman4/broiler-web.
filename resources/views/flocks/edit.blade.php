@@ -18,6 +18,20 @@
                         @csrf
                         @method('PUT')
 
+                        <!-- Unit / Lokasi Kandang -->
+                        <div>
+                            <x-input-label for="coop_id" :value="__('Unit / Lokasi Kandang')" />
+                            <select id="coop_id" name="coop_id" class="block mt-1 w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 shadow-md focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <option value="">-- Pilih Unit / Lokasi Kandang --</option>
+                                @foreach($coops as $coop)
+                                    <option value="{{ $coop->id }}" {{ old('coop_id', $flock->coop_id) == $coop->id ? 'selected' : '' }}>
+                                        {{ $coop->name }} ({{ $coop->manager_name }}){{ $coop->is_headquarters ? ' — [Kantor Pusat]' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('coop_id')" class="mt-2" />
+                        </div>
+
                         <!-- Nama Kandang -->
                         <div>
                             <x-input-label for="name" :value="__('Nama Kandang')" />

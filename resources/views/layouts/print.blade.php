@@ -144,17 +144,29 @@
     </div>
 
     <!-- A4 Paper -->
+    @php
+        $activeCoop = $coop ?? \App\Models\Coop::where('is_headquarters', true)->first() ?? \App\Models\Coop::first();
+        $coopName = $activeCoop ? strtoupper($activeCoop->name) : 'PETERNAKAN BROILER HANAU';
+        $coopTagline = $activeCoop && $activeCoop->tagline
+            ? $activeCoop->tagline
+            : 'Sistem Informasi Manajemen Kepegawaian & Monitoring Produktivitas Kandang Ayam Broiler';
+        $coopAddress = $activeCoop && $activeCoop->address
+            ? $activeCoop->address
+            : 'Desa Pembuang Hulu I, Kec. Hanau, Kab. Seruyan, Kalimantan Tengah';
+        $coopPhone = $activeCoop && $activeCoop->phone ? $activeCoop->phone : '(0538) 21088';
+        $coopEmail = $activeCoop && $activeCoop->email ? $activeCoop->email : 'admin@broilerhanau.id';
+        $coopManager = $activeCoop && $activeCoop->manager_name ? $activeCoop->manager_name : 'Pemilik / Manajemen';
+    @endphp
     <div class="paper">
         <!-- Letterhead -->
         <div class="letterhead">
             <div>
-                <div class="letterhead-logo">🐓 SMARTCOOP SOLUTIONS</div>
-                <div class="letterhead-subtitle">Sistem Manajemen Peternakan Broiler Modern & Enterprise</div>
+                <div class="letterhead-logo">🐓 {{ $coopName }}</div>
+                <div class="letterhead-subtitle">{{ $coopTagline }}</div>
             </div>
             <div class="letterhead-address">
-                Jl. Raya Industri Peternakan No. 88, Jawa Barat<br>
-                Email: support@smartcoop.id | Telp: (021) 555-0199<br>
-                Website: www.broilerapp-pro.id
+                {{ $coopAddress }}<br>
+                Email: {{ $coopEmail }} | Telp: {{ $coopPhone }}
             </div>
         </div>
         <div class="divider"></div>
@@ -168,17 +180,17 @@
             <div class="signature-block">
                 <div class="signature-box">
                     <div>Mengetahui,</div>
-                    <div class="font-bold" style="margin-top: 4px;">Pemilik / Manajemen</div>
+                    <div class="font-bold" style="margin-top: 4px;">Kepala Unit / Penanggung Jawab</div>
                     <div class="signature-space"></div>
-                    <div class="font-bold">( _______________________ )</div>
-                    <div class="text-sm" style="color: #64748b; margin-top: 2px;">SmartCoop Solutions Pro</div>
+                    <div class="font-bold">( {{ $coopManager }} )</div>
+                    <div class="text-sm" style="color: #64748b; margin-top: 2px;">{{ $activeCoop ? $activeCoop->name : 'Peternakan Broiler Hanau' }}</div>
                 </div>
             </div>
         @endif
 
         <div style="margin-top: 20px; text-align: center; font-size: 8px; color: #94a3b8;">
-            Dokumen ini digenarasi secara otomatis oleh BroilerApp PRO pada {{ now()->format('d M Y, H:i') }} WIB.<br>
-            Sistem dikembangkan khusus untuk Program P2MW oleh <strong>M Aulia Aziz 231002019</strong>.
+            Dokumen ini digenarasi secara otomatis oleh Sistem Informasi Peternakan pada {{ now()->format('d M Y, H:i') }} WIB.<br>
+            Dikembangkan oleh <strong>M Aulia Aziz (2310020119) — Sistem Informasi FTI UNISKA Banjarmasin</strong>.
         </div>
     </div>
 

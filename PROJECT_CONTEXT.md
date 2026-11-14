@@ -26,14 +26,15 @@
 
 ## 2. Database Schema & Relations
 
-Active SQLite database (`database/database.sqlite`, 20 tables including framework tables `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `migrations`, `password_reset_tokens`, `sessions`).
+Active SQLite database (`database/database.sqlite`, 21 tables including framework tables `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `migrations`, `password_reset_tokens`, `sessions`).
 
 ### 2.1. Domain Tables
 
 | Table | Primary Key | Columns (Exact Name & Type) | Foreign Keys & Relations |
 | :--- | :--- | :--- | :--- |
 | **`users`** | `id` | `name` (string), `email` (string, unique), `role` (string, default `'worker'`), `base_salary` (integer, default `2500000`), `email_verified_at` (timestamp, nullable), `password` (string), `remember_token` | HasMany: `flocks` (`worker_id`), `payrolls` (`user_id`), `activityLogs` (`user_id`) |
-| **`flocks`** | `id` | `name` (string), `breed` (string), `start_date` (date), `initial_population` (uint), `status` (enum `'active'`, `'closed'`, default `'active'`), `stock_pre_starter_kg` (decimal 10,2, default `0`), `stock_starter_kg` (decimal 10,2, default `0`), `stock_finisher_kg` (decimal 10,2, default `0`), `worker_id` (nullable), `closed_at` (timestamp, nullable) | BelongsTo: `worker` $\rightarrow$ `users.id` (`nullOnDelete`). HasMany: `dailyRecords`, `feedRequests`, `growthSamplings`, `harvests` |
+| **`coops`** | `id` | `name` (string), `tagline` (string, nullable), `address` (text), `phone` (string, nullable), `email` (string, nullable), `manager_name` (string), `is_headquarters` (boolean, default `false`) | HasMany: `flocks` (`coop_id`) |
+| **`flocks`** | `id` | `coop_id` (nullable), `name` (string), `breed` (string), `start_date` (date), `initial_population` (uint), `status` (enum `'active'`, `'closed'`, default `'active'`), `stock_pre_starter_kg` (decimal 10,2, default `0`), `stock_starter_kg` (decimal 10,2, default `0`), `stock_finisher_kg` (decimal 10,2, default `0`), `worker_id` (nullable), `closed_at` (timestamp, nullable) | BelongsTo: `coop` $\rightarrow$ `coops.id` (`nullOnDelete`), `worker` $\rightarrow$ `users.id` (`nullOnDelete`). HasMany: `dailyRecords`, `feedRequests`, `growthSamplings`, `harvests` |
 | **`daily_records`** | `id` | `flock_id`, `record_date` (date), `mortality` (uint, default `0`), `culling` (uint, default `0`), `feed_pre_starter_kg` (decimal 8,2, default `0.00`), `feed_starter_kg` (decimal 8,2, default `0.00`), `feed_finisher_kg` (decimal 8,2, default `0.00`), `average_weight_gram` (integer, nullable) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`cascadeOnDelete`). *Virtual Accessor*: `feed_consumed_kg` |
 | **`harvests`** | `id` | `flock_id`, `harvest_date` (date), `total_chickens_sold` (uint), `total_weight_kg` (decimal 10,2), `buyer_name` (string), `chicken_price_per_kg` (decimal 12,2, default `0`), `feed_price_per_kg` (decimal 12,2, default `0`), `total_feed_cost` (decimal 15,2, default `0`), `gross_revenue` (decimal 15,2, default `0`), `net_profit` (decimal 15,2, default `0`), `revenue` (decimal 15,2, default `0`) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`cascadeOnDelete`) |
 | **`feed_inventories`** | `id` | `transaction_date` (date), `feed_name` (string), `transaction_type` (enum `'in'`, `'out'`), `quantity_kg` (decimal 10,2), `price_per_kg` (integer, nullable), `notes` (string, nullable), `flock_id` (nullable) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`nullOnDelete`) |
@@ -90,6 +91,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` | `auth` only *(no role check)* |
 | `RESOURCE /ovk` | `ovk.*` | `OvkController` | `auth` only *(no role check)* |
 | `RESOURCE /cash-flows` | `cash-flows.*` | `CashFlowController` | `auth` only *(no role check)* |
+| `RESOURCE /coops` (`only: index,store,update,destroy`) | `coops.{index,store,update,destroy}` | `CoopController` | `auth`, `can:manage-enterprise` |
 | `RESOURCE /workers` (`only: index,store,update,destroy`) | `workers.{index,store,update,destroy}` | `WorkerController` | `auth`, `can:manage-enterprise` |
 | `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` | `auth`, `can:manage-enterprise` |
 | `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` | `auth`, `can:manage-enterprise` |
@@ -104,6 +106,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` |
 | `RESOURCE /ovk` (`only: index,store`) | `ovk.{index,store}` | `OvkController` |
 | `RESOURCE /cash-flows` (`only: index,store`) | `cash-flows.{index,store}` | `CashFlowController` |
+| `RESOURCE /coops` (`only: index,store,update,destroy`) | `coops.{index,store,update,destroy}` | `CoopController` |
 | `RESOURCE /workers` (`only: index,store,update,destroy`) | `workers.{index,store,update,destroy}` | `WorkerController` |
 | `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` |
 | `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` |
@@ -127,25 +130,26 @@ Defined in `routes/web.php` and `routes/auth.php`.
 
 | Controller | Action | View Rendered | Variables Passed (`compact` / `view`) |
 | :--- | :--- | :--- | :--- |
-| `FlockController` | `index` | `flocks.index` | `flocks`, `workers`, `globalMarketPrice` |
-| `FlockController` | `create` | `flocks.create` | `workers` |
+| `CoopController` | `index` | `coops.index` | `coops` (with `flocks_count`) |
+| `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `globalMarketPrice` |
+| `FlockController` | `create` | `flocks.create` | `workers`, `coops` |
 | `FlockController` | `show` | `flocks.show` | `flock`, `dailyRecords`, `harvests`, `totalMortality`, `totalCulling`, `livePopulation`, `totalFeedConsumed`, `totalHarvestSold`, `totalHarvestWeight`, `totalRevenue`, `fcr`, `ip`, `livability`, `avgWeightKg`, `harvestAge`, `chartDates`, `chartMortality`, `chartFeed`, `latestHarvest`, `bepChartData`, `totalCost`, `estimatedRevenue`, `netProfit`, `feedRequests` |
-| `FlockController` | `edit` | `flocks.edit` | `flock`, `workers` *(View missing!)* |
+| `FlockController` | `edit` | `flocks.edit` | `flock`, `workers`, `coops` |
 | `DailyRecordController` | `create` | `daily_records.create` | `flock` |
 | `HarvestController` | `index` | `harvests.history` | `harvests`, `total_net_profit`, `total_revenue`, `total_weight`, `chartLabels`, `chartData` |
 | `HarvestController` | `create` | `harvests.create` | `flock`, `livePopulation` |
-| `HarvestController` | `exportPdf` | `reports.harvest-preview` | `flock`, `harvest`, `livePopulation`, `totalMortality`, `totalCulling`, `totalFeed`, `fcr`, `avgWeight`, `livability`, `harvestAge`, `ip`, `docPrice`, `totalDocCost`, `totalFeedCost`, `grossRevenue`, `laborCost`, `cogs`, `totalExpenses`, `trueNetProfit`, `profitMargin`, `bepPricePerKg` |
+| `HarvestController` | `exportPdf` | `reports.harvest-preview` | `flock`, `coop`, `harvest`, `livePopulation`, `totalMortality`, `totalCulling`, `totalFeed`, `fcr`, `avgWeight`, `livability`, `harvestAge`, `ip`, `docPrice`, `totalDocCost`, `totalFeedCost`, `grossRevenue`, `laborCost`, `cogs`, `totalExpenses`, `trueNetProfit`, `profitMargin`, `bepPricePerKg` |
 | `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `flocks` |
 | `AnalyticsController` | `index` | `analytics.index` | `analyticsData`, `farmAverages` |
 | `PayrollController` | `index` | `payrolls.index` | `workers`, `closedFlocks` (enriched with `worker_name`, `worker_base_salary`, `total_chickens_sold`, `total_weight_kg`, `total_feed_kg`, `harvest_age`, `achieved_fcr`, `achieved_ip`, `bonus_percentage`, `bonus_tier_label`, `recommended_bonus`), `payrolls` |
-| `PayrollController` | `payslipPreview` | `reports.payslip-preview` | `payroll` |
+| `PayrollController` | `payslipPreview` | `reports.payslip-preview` | `payroll`, `coop` |
 | `OvkController` | `index` | `ovk.index` | `records`, `totalSpending` |
 | `CashFlowController` | `index` | `cash_flows.index` | `records`, `total_in`, `total_out`, `balance` |
 | `WorkerController` | `index` | `workers.index` | `workers` (enriched with `flocks_count`, `closed_flocks_count`, `daily_records_count`, `activity_logs_count`, `discipline_logs_count`, `average_ip`) |
 | `ActivityLogController` | `index` | `activity_logs.index` / `partials.table_data` | `logs` |
-| `ReportController` | `dailyRecordPreview` | `reports.daily-record-preview` | `flock`, `dailyRecords`, `totalMortality`, `totalFeed`, `livePopulation` |
-| `ReportController` | `cashFlowPreview` | `reports.cashflow-preview` | `records`, `total_in`, `total_out`, `balance` |
-| `ReportController` | `inventoryAuditPreview` | `reports.inventory-audit-preview` | `records`, `totalIn`, `totalOut`, `totalValue` |
+| `ReportController` | `dailyRecordPreview` | `reports.daily-record-preview` | `flock`, `coop`, `dailyRecords`, `totalMortality`, `totalFeed`, `livePopulation` |
+| `ReportController` | `cashFlowPreview` | `reports.cashflow-preview` | `coop` (HQ), `records`, `total_in`, `total_out`, `balance` |
+| `ReportController` | `inventoryAuditPreview` | `reports.inventory-audit-preview` | `coop` (HQ), `records`, `totalIn`, `totalOut`, `totalValue` |
 
 ---
 
@@ -185,4 +189,10 @@ Defined in `routes/web.php` and `routes/auth.php`.
      - **IP 300 – 349.99 (Cukup / Standar)**: `10%` of `base_salary`
      - **IP $<$ 300 (Kurang)**: `0%` (`Rp 0`)
    - Owner can still override `base_salary` and `bonus_amount` in the Alpine.js payroll form before submitting to `PayrollController@store`.
+9. **Master Coop Units & Dynamic A4 Letterhead (Phase 3 - Option B)**:
+   - `coops` table stores unit identity (`name`, `tagline`, `address`, `phone`, `email`, `manager_name`, `is_headquarters`).
+   - Flock-specific A4 print views (`daily-record-preview`, `harvest-preview`, `payslip-preview`) pass `$coop = $flock->coop` (or `$payroll->flock?->coop`) to `layouts.print`.
+   - Global A4 print views (`cashflow-preview`, `inventory-audit-preview`) use the Headquarters unit (`is_headquarters = true`, default: **Kandang Hanau**) and include the subtitle `"Laporan Rekapitulasi Pusat — Seluruh Unit Kandang"`.
+   - `FarmDataSeeder.php` seeds 3 Coop units (`Kandang Hanau` [HQ], `Kandang Seruyan Utama`, `Kandang Plasma C`), links all 12 flocks via `coop_id`, and computes tiered IP bonuses on seeded payrolls. Orphaned `JuneFlockSeeder.php` removed.
+
 

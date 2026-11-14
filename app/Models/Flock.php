@@ -18,6 +18,7 @@ class Flock extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'coop_id',
         'name',
         'breed',
         'start_date',
@@ -51,6 +52,14 @@ class Flock extends Model
     public function getCurrentFeedStockKgAttribute()
     {
         return $this->stock_pre_starter_kg + $this->stock_starter_kg + $this->stock_finisher_kg;
+    }
+
+    /**
+     * Get the coop unit (location) that owns this flock.
+     */
+    public function coop(): BelongsTo
+    {
+        return $this->belongsTo(Coop::class);
     }
 
     /**

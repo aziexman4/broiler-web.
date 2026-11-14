@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\CashFlow;
+use App\Models\Coop;
 use App\Models\Flock;
 use App\Models\OvkInventory;
 use App\Models\Payroll;
@@ -20,6 +21,43 @@ class FarmDataSeeder extends Seeder
         $harries = User::where('email', 'harries@smartcoop.com')->first();
         $danang = User::where('email', 'danang@smartcoop.com')->first();
         $mujawiri = User::where('email', 'mujawiri@smartcoop.com')->first();
+
+        // 0. MASTER UNIT & LOKASI KANDANG (COOPS)
+        $coopHanau = Coop::firstOrCreate(
+            ['name' => 'Kandang Hanau'],
+            [
+                'tagline' => 'Sistem Informasi Manajemen Kepegawaian & Monitoring Produktivitas Kandang Ayam Broiler',
+                'address' => 'Desa Pembuang Hulu I, Kec. Hanau, Kab. Seruyan, Kalimantan Tengah',
+                'phone' => '(0538) 21088',
+                'email' => 'hanau@smartcoop.com',
+                'manager_name' => $harries ? $harries->name : 'Muhammad Harries Rasyadi',
+                'is_headquarters' => true,
+            ]
+        );
+
+        $coopSeruyan = Coop::firstOrCreate(
+            ['name' => 'Kandang Seruyan Utama'],
+            [
+                'tagline' => 'Unit Produksi Broiler Wilayah Seruyan Hilir',
+                'address' => 'Jl. Ahmad Yani, Kuala Pembuang, Kec. Seruyan Hilir, Kab. Seruyan, Kalimantan Tengah',
+                'phone' => '(0538) 22104',
+                'email' => 'seruyan@smartcoop.com',
+                'manager_name' => $danang ? $danang->name : 'Danang Onky Romadhoni',
+                'is_headquarters' => false,
+            ]
+        );
+
+        $coopPlasmaC = Coop::firstOrCreate(
+            ['name' => 'Kandang Plasma C'],
+            [
+                'tagline' => 'Unit Kemitraan Plasma Broiler Wilayah Danau Sembuluh',
+                'address' => 'Desa Telaga Pulang, Kec. Danau Sembuluh, Kab. Seruyan, Kalimantan Tengah',
+                'phone' => '(0538) 23019',
+                'email' => 'plasmac@smartcoop.com',
+                'manager_name' => $mujawiri ? $mujawiri->name : 'Mujawiri Apandie',
+                'is_headquarters' => false,
+            ]
+        );
 
         // Initial Feed Stock In
         \App\Models\FeedInventory::create([
@@ -196,7 +234,18 @@ class FarmDataSeeder extends Seeder
         ];
 
         foreach ($flockDefinitions as $def) {
+            if (str_starts_with($def['name'], 'Kandang Hanau')) {
+                $coopId = $coopHanau->id;
+            } elseif (str_starts_with($def['name'], 'Kandang Seruyan Utama')) {
+                $coopId = $coopSeruyan->id;
+            } elseif (str_starts_with($def['name'], 'Kandang Plasma C')) {
+                $coopId = $coopPlasmaC->id;
+            } else {
+                $coopId = $coopHanau->id;
+            }
+
             $flock = Flock::create([
+                'coop_id' => $coopId,
                 'name' => $def['name'],
                 'breed' => $def['breed'],
                 'start_date' => $def['start_date'],
@@ -344,10 +393,28 @@ class FarmDataSeeder extends Seeder
                 // Create Payroll Record for the assigned worker
                 if (isset($def['worker'])) {
                     $worker = $def['worker'];
-                    $baseSalary = $worker->base_salary;
-                    
-                    // Since all closed flocks perform well, bonus of Rp 500.000 is granted (IP > 300)
-                    $bonusAmount = 500000;
+                    $baseSalary = (int) $worker->base_salary;
+
+                    // Calculate actual IP & tiered bonus percentage (Phase 2 formula)
+                    $fcr = $totalWeightKg > 0 ? round($accumulatedFeed / $totalWeightKg, 2) : 0;
+                    $avgWeightKg = $chickensSold > 0 ? ($totalWeightKg / $chickensSold) : 0;
+                    $livability = $def['initial_population'] > 0 ? (($chickensSold / $def['initial_population']) * 100) : 0;
+                    $harvestAge = max(1, intval(Carbon::parse($def['start_date'])->diffInDays(Carbon::parse($def['closed_at']))));
+                    $ip = ($fcr > 0 && $harvestAge > 0)
+                        ? round(($livability * $avgWeightKg) / ($fcr * $harvestAge) * 100, 2)
+                        : 0;
+
+                    if ($ip >= 400) {
+                        $bonusPercentage = 20;
+                    } elseif ($ip >= 350) {
+                        $bonusPercentage = 15;
+                    } elseif ($ip >= 300) {
+                        $bonusPercentage = 10;
+                    } else {
+                        $bonusPercentage = 0;
+                    }
+
+                    $bonusAmount = (int) round($baseSalary * ($bonusPercentage / 100));
                     $totalPaid = $baseSalary + $bonusAmount;
 
                     Payroll::create([
