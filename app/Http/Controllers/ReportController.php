@@ -120,18 +120,20 @@ class ReportController extends Controller
     /**
      * Preview Cash Flow Statement as printable HTML.
      */
-    public function cashFlowPreview()
+    public function cashFlowPreview(Request $request)
     {
         $coop = Coop::where('is_headquarters', true)->first();
-        $records = CashFlow::orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        $summary = CashFlow::getFilteredSummary($request);
 
-        $total_in = CashFlow::where('type', 'in')->sum('amount');
-        $total_out = CashFlow::where('type', 'out')->sum('amount');
-        $balance = $total_in - $total_out;
-
-        return view('reports.cashflow-preview', compact('coop', 'records', 'total_in', 'total_out', 'balance'));
+        return view('reports.cashflow-preview', [
+            'coop' => $coop,
+            'records' => $summary['records'],
+            'total_in' => $summary['total_in'],
+            'total_out' => $summary['total_out'],
+            'balance' => $summary['balance'],
+            'activeFilterType' => $summary['activeFilterType'],
+            'periodLabel' => $summary['periodLabel'],
+        ]);
     }
 
     /**

@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="doc-title">LAPORAN ARUS KAS OPERASIONAL</div>
-    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Periode: {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->last()->transaction_date)->format('d M Y') : '-' }} — {{ $records->count() > 0 ? \Carbon\Carbon::parse($records->first()->transaction_date)->format('d M Y') : '-' }}</div>
+    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Periode: {{ $periodLabel ?? ($records->count() > 0 ? \Carbon\Carbon::parse($records->last()->transaction_date)->locale('id')->translatedFormat('d M Y') . ' — ' . \Carbon\Carbon::parse($records->first()->transaction_date)->locale('id')->translatedFormat('d M Y') : '-') }}</div>
 
     <!-- KPI Summary -->
     <div class="kpi-grid">
@@ -44,7 +44,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($records->sortBy('transaction_date')->values() as $i => $record)
+            @forelse($records->sortBy('transaction_date')->values() as $i => $record)
                 <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td class="text-center">{{ \Carbon\Carbon::parse($record->transaction_date)->format('d/m/Y') }}</td>
@@ -61,7 +61,11 @@
                         {{ $record->type === 'out' ? 'Rp ' . number_format($record->amount, 0, ',', '.') : '-' }}
                     </td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center" style="padding: 18px; color: #64748b;">Tidak ada transaksi kas pada periode yang dipilih.</td>
+                </tr>
+            @endforelse
         </tbody>
         <tfoot>
             <tr style="background:#f1f5f9">

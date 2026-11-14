@@ -8,19 +8,20 @@ use Illuminate\Http\Request;
 class CashFlowController extends Controller
 {
     /**
-     * Display cash flow history and metrics.
+     * Display cash flow history and metrics with optional period filtering.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $records = CashFlow::orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        $summary = CashFlow::getFilteredSummary($request);
 
-        $total_in = CashFlow::where('type', 'in')->sum('amount');
-        $total_out = CashFlow::where('type', 'out')->sum('amount');
-        $balance = $total_in - $total_out;
-
-        return view('cash_flows.index', compact('records', 'total_in', 'total_out', 'balance'));
+        return view('cash_flows.index', [
+            'records' => $summary['records'],
+            'total_in' => $summary['total_in'],
+            'total_out' => $summary['total_out'],
+            'balance' => $summary['balance'],
+            'activeFilterType' => $summary['activeFilterType'],
+            'periodLabel' => $summary['periodLabel'],
+        ]);
     }
 
     /**
