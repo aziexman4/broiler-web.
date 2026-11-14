@@ -71,7 +71,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('cash-flows', CashFlowController::class)->only(['index', 'store']);
 
         // Modul Manajemen Karyawan / Pekerja (HRD)
-        Route::resource('workers', WorkerController::class)->only(['index', 'store', 'destroy']);
+        Route::resource('workers', WorkerController::class)->only(['index', 'store', 'update', 'destroy']);
 
         // Modul Log Aktivitas (Audit Trail)
         Route::get('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index'])->name('activity_logs.index');

@@ -90,18 +90,27 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` | `auth` only *(no role check)* |
 | `RESOURCE /ovk` | `ovk.*` | `OvkController` | `auth` only *(no role check)* |
 | `RESOURCE /cash-flows` | `cash-flows.*` | `CashFlowController` | `auth` only *(no role check)* |
-| `RESOURCE /workers` (except create/show/edit/update) | `workers.{index,store,destroy}` | `WorkerController` | `auth` only *(no role check)* |
-| `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` | Inline `role !== 'owner'` check (403) |
-| `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` | `auth` only *(no role check)* |
-| `GET /reports/inventory-audit` | `reports.inventory-audit` | `ReportController@inventoryAuditPreview` | `auth` only *(no role check)* |
+| `RESOURCE /workers` (`only: index,store,update,destroy`) | `workers.{index,store,update,destroy}` | `WorkerController` | `auth`, `can:manage-enterprise` |
+| `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` | `auth`, `can:manage-enterprise` |
+| `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` | `auth`, `can:manage-enterprise` |
+| `GET /reports/inventory-audit` | `reports.inventory-audit` | `ReportController@inventoryAuditPreview` | `auth`, `can:manage-enterprise` |
 
 ### 3.3. Enterprise Routes (`middleware(['auth', 'can:manage-enterprise'])` — Owner Only)
 
 | HTTP & URI | Route Name | Controller@Method |
 | :--- | :--- | :--- |
+| `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` |
+| `RESOURCE /feeds` (`only: index,store`) & `GET /feed` | `feeds.{index,store}`, `feed.index` | `FeedInventoryController` |
+| `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` |
+| `RESOURCE /ovk` (`only: index,store`) | `ovk.{index,store}` | `OvkController` |
+| `RESOURCE /cash-flows` (`only: index,store`) | `cash-flows.{index,store}` | `CashFlowController` |
+| `RESOURCE /workers` (`only: index,store,update,destroy`) | `workers.{index,store,update,destroy}` | `WorkerController` |
+| `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` |
+| `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` |
+| `GET /reports/inventory-audit` | `reports.inventory-audit` | `ReportController@inventoryAuditPreview` |
 | `GET /analytics` | `analytics.index` | `AnalyticsController@index` |
 | `GET /financial-history` | `financial.history` | `HarvestController@index` |
-| `RESOURCE /payrolls` | `payrolls.*` | `PayrollController` |
+| `RESOURCE /payrolls` (`only: index,store`) | `payrolls.{index,store}` | `PayrollController` |
 | `GET /payrolls/{payroll}/payslip` | `payrolls.payslip` | `PayrollController@payslipPreview` |
 
 ---
@@ -128,11 +137,11 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `HarvestController` | `exportPdf` | `reports.harvest-preview` | `flock`, `harvest`, `livePopulation`, `totalMortality`, `totalCulling`, `totalFeed`, `fcr`, `avgWeight`, `livability`, `harvestAge`, `ip`, `docPrice`, `totalDocCost`, `totalFeedCost`, `grossRevenue`, `laborCost`, `cogs`, `totalExpenses`, `trueNetProfit`, `profitMargin`, `bepPricePerKg` |
 | `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `flocks` |
 | `AnalyticsController` | `index` | `analytics.index` | `analyticsData`, `farmAverages` |
-| `PayrollController` | `index` | `payrolls.index` | `workers`, `closedFlocks`, `payrolls` |
+| `PayrollController` | `index` | `payrolls.index` | `workers`, `closedFlocks` (enriched with `worker_name`, `worker_base_salary`, `total_chickens_sold`, `total_weight_kg`, `total_feed_kg`, `harvest_age`, `achieved_fcr`, `achieved_ip`, `bonus_percentage`, `bonus_tier_label`, `recommended_bonus`), `payrolls` |
 | `PayrollController` | `payslipPreview` | `reports.payslip-preview` | `payroll` |
 | `OvkController` | `index` | `ovk.index` | `records`, `totalSpending` |
 | `CashFlowController` | `index` | `cash_flows.index` | `records`, `total_in`, `total_out`, `balance` |
-| `WorkerController` | `index` | `workers.index` | `workers` |
+| `WorkerController` | `index` | `workers.index` | `workers` (enriched with `flocks_count`, `closed_flocks_count`, `daily_records_count`, `activity_logs_count`, `discipline_logs_count`, `average_ip`) |
 | `ActivityLogController` | `index` | `activity_logs.index` / `partials.table_data` | `logs` |
 | `ReportController` | `dailyRecordPreview` | `reports.daily-record-preview` | `flock`, `dailyRecords`, `totalMortality`, `totalFeed`, `livePopulation` |
 | `ReportController` | `cashFlowPreview` | `reports.cashflow-preview` | `records`, `total_in`, `total_out`, `balance` |
@@ -168,3 +177,12 @@ Defined in `routes/web.php` and `routes/auth.php`.
 5. **Feed Inventory `transaction_type`**: Always use `'in'` and `'out'` (never `'purchase'`).
 6. **Stock Mutators**: When modifying `DailyRecord` feed consumption, always preserve the auto-deduct/revert logic on `flock->stock_{pre_starter,starter,finisher}_kg` and `FeedInventory` records.
 7. **Theme & UI**: Respect the Anti-Flashbang light mode (`#f1f5f9` / `#f8fafc`) and Dark mode classes (`dark:*`) in `layouts/app.blade.php`. Use Alpine.js for interactive drawers/modals and Chart.js for data charts.
+8. **HRD & Tiered IP Bonus Formula (Phase 2)**:
+   - `WorkerController` restricts `update` and `destroy` strictly to accounts where `role === 'worker'`.
+   - `PayrollController` calculates tiered IP bonus recommendations from physical feed consumption (`DB::raw('feed_pre_starter_kg + feed_starter_kg + feed_finisher_kg')`):
+     - **IP $\ge$ 400 (Sangat Baik)**: `20%` of `base_salary`
+     - **IP 350 – 399.99 (Baik)**: `15%` of `base_salary`
+     - **IP 300 – 349.99 (Cukup / Standar)**: `10%` of `base_salary`
+     - **IP $<$ 300 (Kurang)**: `0%` (`Rp 0`)
+   - Owner can still override `base_salary` and `bonus_amount` in the Alpine.js payroll form before submitting to `PayrollController@store`.
+

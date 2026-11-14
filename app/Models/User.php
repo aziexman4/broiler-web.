@@ -81,4 +81,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Flock::class, 'worker_id');
     }
+
+    /**
+     * Get all activity logs recorded by this user.
+     */
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
 }
