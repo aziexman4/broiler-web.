@@ -79,7 +79,7 @@ class FarmDataSeeder extends Seeder
         ]);
 
         // -------------------------------------------------------------
-        // 1. FLOCKS & HARVESTS DEFINITIONS (8 Closed + 2 Active)
+        // 1. FLOCKS & HARVESTS DEFINITIONS (9 Closed + 3 Active)
         // -------------------------------------------------------------
         $flockDefinitions = [
             // Location A: Kandang Hanau (Worker: Harries)
@@ -455,15 +455,61 @@ class FarmDataSeeder extends Seeder
         }
 
         // -------------------------------------------------------------
-        // 3. CASH FLOW SEEDER
+        // 3. CASH FLOW SEEDER (Februari 2026 – November 2026)
         // -------------------------------------------------------------
         $cashFlows = [
-            ['date' => Carbon::now()->subMonths(9)->toDateString(), 'desc' => 'Pembelian Sekam Alas Kandang (3 Truk)', 'type' => 'out', 'amount' => 3600000],
-            ['date' => Carbon::now()->subMonths(8)->toDateString(), 'desc' => 'Pembayaran Listrik & Token Kandang Utama', 'type' => 'out', 'amount' => 1850000],
-            ['date' => Carbon::now()->subMonths(7)->toDateString(), 'desc' => 'Hasil Penjualan Pupuk Karungan (Kotoran Ayam)', 'type' => 'in', 'amount' => 4500000],
-            ['date' => Carbon::now()->subMonths(5)->toDateString(), 'desc' => 'Perbaikan Kipas Ventilation Blower', 'type' => 'out', 'amount' => 1200000],
-            ['date' => Carbon::now()->subMonths(3)->toDateString(), 'desc' => 'Hasil Penjualan Karung Pakan Bekas', 'type' => 'in', 'amount' => 2100000],
-            ['date' => Carbon::now()->subMonths(1)->toDateString(), 'desc' => 'Pembelian Sekam Baru untuk Siklus Aktif', 'type' => 'out', 'amount' => 4200000],
+            // Februari 2026
+            ['date' => '2026-02-05', 'desc' => 'Pembelian Sekam Alas Kandang (3 Truk) — Persiapan Plasma C', 'type' => 'out', 'amount' => 3600000],
+            ['date' => '2026-02-18', 'desc' => 'Pembelian Gas LPG Pemanas Brooding DOC (15 Tabung)', 'type' => 'out', 'amount' => 950000],
+            ['date' => '2026-02-24', 'desc' => 'Hasil Penjualan Pupuk Karungan Kotoran Ayam (Hanau Siklus 1)', 'type' => 'in', 'amount' => 1850000],
+
+            // Maret 2026
+            ['date' => '2026-03-10', 'desc' => 'Pembayaran Listrik & Token Kandang Utama', 'type' => 'out', 'amount' => 1850000],
+            ['date' => '2026-03-25', 'desc' => 'Hasil Penjualan Karung Pakan Bekas (Kandang Plasma C)', 'type' => 'in', 'amount' => 1450000],
+
+            // April 2026 (Bulan aktif panen & chick-in: in & out seimbang)
+            ['date' => '2026-04-06', 'desc' => 'Pembelian Sekam Alas Kandang (Kandang Hanau Siklus 2)', 'type' => 'out', 'amount' => 3600000],
+            ['date' => '2026-04-12', 'desc' => 'Pembelian Gas LPG Brooding DOC & Token Air Kandang', 'type' => 'out', 'amount' => 1100000],
+            ['date' => '2026-04-14', 'desc' => 'Hasil Penjualan Pupuk Karungan (Kotoran Ayam)', 'type' => 'in', 'amount' => 4500000],
+            ['date' => '2026-04-24', 'desc' => 'Hasil Penjualan Karung Pakan Bekas & Sisa Sekam Kering', 'type' => 'in', 'amount' => 1350000],
+
+            // Mei 2026
+            ['date' => '2026-05-08', 'desc' => 'Pembelian Sekam Tambahan & Kapur Sanitasi Lantai Kandang', 'type' => 'out', 'amount' => 1800000],
+            ['date' => '2026-05-15', 'desc' => 'Pembayaran Token Listrik & Biaya Air Operasional Kandang', 'type' => 'out', 'amount' => 1450000],
+
+            // Juni 2026 (Bulan aktif pemeliharaan & maintenance)
+            ['date' => '2026-06-05', 'desc' => 'Pembelian Sekam Alas Kandang (Kandang Plasma C Siklus 2)', 'type' => 'out', 'amount' => 2400000],
+            ['date' => '2026-06-14', 'desc' => 'Perbaikan Kipas Ventilation Blower & Instalasi Kabel', 'type' => 'out', 'amount' => 1200000],
+            ['date' => '2026-06-20', 'desc' => 'Hasil Penjualan Pupuk Karungan Kotoran Ayam (Kandang Hanau)', 'type' => 'in', 'amount' => 2950000],
+            ['date' => '2026-06-27', 'desc' => 'Hasil Penjualan Sisa Sekam & Limbah Non-Ayam', 'type' => 'in', 'amount' => 980000],
+
+            // Juli 2026
+            ['date' => '2026-07-10', 'desc' => 'Pembelian Gas LPG Pemanas Brooding DOC (Seruyan Utama)', 'type' => 'out', 'amount' => 1050000],
+            ['date' => '2026-07-23', 'desc' => 'Hasil Penjualan Karung Pakan Bekas (Kandang Plasma C)', 'type' => 'in', 'amount' => 1600000],
+
+            // Agustus 2026 (Bulan aktif panen & persiapan siklus 3)
+            ['date' => '2026-08-03', 'desc' => 'Pembelian Sekam Alas Kandang (Kandang Hanau Siklus 3)', 'type' => 'out', 'amount' => 2600000],
+            ['date' => '2026-08-07', 'desc' => 'Pembayaran Token Listrik & Air Kandang (Semua Unit)', 'type' => 'out', 'amount' => 1950000],
+            ['date' => '2026-08-14', 'desc' => 'Hasil Penjualan Karung Pakan Bekas', 'type' => 'in', 'amount' => 2100000],
+            ['date' => '2026-08-21', 'desc' => 'Perawatan Instalasi Tempat Minum Nipple & Kipas Blower', 'type' => 'out', 'amount' => 1350000],
+            ['date' => '2026-08-26', 'desc' => 'Hasil Penjualan Pupuk Karungan Kotoran Ayam (Seruyan Utama)', 'type' => 'in', 'amount' => 3200000],
+
+            // September 2026
+            ['date' => '2026-09-08', 'desc' => 'Pembelian Gas LPG Brooding DOC (Seruyan & Plasma C)', 'type' => 'out', 'amount' => 1250000],
+            ['date' => '2026-09-22', 'desc' => 'Hasil Penjualan Pupuk Kotoran Ayam (Hanau Siklus 3)', 'type' => 'in', 'amount' => 1750000],
+
+            // Oktober 2026 (Bulan aktif transisi siklus tutup buku -> siklus aktif)
+            ['date' => '2026-10-05', 'desc' => 'Pembelian Sekam Baru untuk Siklus Aktif', 'type' => 'out', 'amount' => 4200000],
+            ['date' => '2026-10-12', 'desc' => 'Pembayaran Token Listrik, Air & Gas LPG Brooding DOC', 'type' => 'out', 'amount' => 1750000],
+            ['date' => '2026-10-22', 'desc' => 'Hasil Penjualan Pupuk Karungan (Kotoran Ayam Siklus 3)', 'type' => 'in', 'amount' => 3400000],
+            ['date' => '2026-10-27', 'desc' => 'Hasil Penjualan Karung Pakan Bekas & Sisa Sekam', 'type' => 'in', 'amount' => 1250000],
+
+            // November 2026 (Bulan berjalan - 3 unit siklus aktif)
+            ['date' => '2026-11-03', 'desc' => 'Pembayaran Token Listrik & Air Kandang Siklus Aktif', 'type' => 'out', 'amount' => 1900000],
+            ['date' => '2026-11-07', 'desc' => 'Pembelian Gas LPG Pemanas Brooding DOC (Hanau Siklus 4)', 'type' => 'out', 'amount' => 1150000],
+            ['date' => '2026-11-10', 'desc' => 'Hasil Penjualan Pupuk Karungan Kotoran Ayam', 'type' => 'in', 'amount' => 2650000],
+            ['date' => '2026-11-12', 'desc' => 'Perawatan Rutin Kipas Exhaust Blower & Instalasi Kandang', 'type' => 'out', 'amount' => 850000],
+            ['date' => '2026-11-14', 'desc' => 'Hasil Penjualan Karung Pakan Bekas & Limbah Non-Ayam', 'type' => 'in', 'amount' => 1150000],
         ];
 
         foreach ($cashFlows as $cf) {
