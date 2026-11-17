@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-slate-800 leading-tight">
+            <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-100 leading-tight">
                 {{ __('Dashboard Kandang (Flocks)') }}
             </h2>
             @if(Auth::user()->isOwner())
@@ -19,7 +19,7 @@
             <!-- Global Market Price Widget -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between mb-6 gap-4 transition-all hover:shadow-lg">
                 <div class="flex items-center gap-4 w-full md:w-auto">
-                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl hidden sm:block">
+                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl hidden sm:block">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <div>
