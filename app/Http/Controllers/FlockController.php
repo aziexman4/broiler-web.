@@ -83,9 +83,10 @@ class FlockController extends Controller
         $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
         $totalFeedConsumed = $dailyRecords->sum('feed_consumed_kg');
 
+        $canManageEnterprise = Gate::allows('manage-enterprise');
         $totalHarvestSold = $harvests->sum('total_chickens_sold');
         $totalHarvestWeight = $harvests->sum('total_weight_kg');
-        $totalRevenue = $harvests->sum('revenue');
+        $totalRevenue = $canManageEnterprise ? $harvests->sum('revenue') : 0;
 
         $fcr = $totalHarvestWeight > 0 ? round($totalFeedConsumed / $totalHarvestWeight, 3) : 0;
         $livability = $flock->initial_population > 0 ? round(($livePopulation / $flock->initial_population) * 100, 2) : 0;
@@ -137,15 +138,21 @@ class FlockController extends Controller
             'bepTargets' => $bepTargets
         ]);
 
-        // Individual P&L Calculation (Forecasting based on Current Alive Birds)
-        $totalCost = ($flock->initial_population * $docPrice) + ($totalFeedConsumed * $feedPrice);
-        
-        $latestRecordObj = $flock->dailyRecords()->orderBy('record_date', 'desc')->first();
-        $latestAvgWeightGram = $latestRecordObj->average_weight_gram ?? (40 + ($harvestAge * 45));
-        $latestAvgWeightKg = $latestAvgWeightGram / 1000;
-        
-        $estimatedRevenue = $livePopulation * $latestAvgWeightKg * $marketPrice;
-        $netProfit = $estimatedRevenue - $totalCost;
+        // Individual P&L Calculation (Forecasting based on Current Alive Birds — Owner / manage-enterprise only)
+        if ($canManageEnterprise) {
+            $totalCost = ($flock->initial_population * $docPrice) + ($totalFeedConsumed * $feedPrice);
+
+            $latestRecordObj = $flock->dailyRecords()->orderBy('record_date', 'desc')->first();
+            $latestAvgWeightGram = $latestRecordObj->average_weight_gram ?? (40 + ($harvestAge * 45));
+            $latestAvgWeightKg = $latestAvgWeightGram / 1000;
+
+            $estimatedRevenue = $livePopulation * $latestAvgWeightKg * $marketPrice;
+            $netProfit = $estimatedRevenue - $totalCost;
+        } else {
+            $totalCost = 0;
+            $estimatedRevenue = 0;
+            $netProfit = 0;
+        }
 
         $latestHarvest = $harvests->first();
         $dailyRecords = $dailyRecords->reverse();

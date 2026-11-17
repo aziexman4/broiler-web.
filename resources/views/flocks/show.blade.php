@@ -124,7 +124,8 @@
                 </div>
             </div>
 
-                <!-- Individual P&L Forecasting Widget -->
+                @can('manage-enterprise')
+                <!-- Individual P&L Forecasting Widget (Owner Only) -->
                 <div class="bg-gradient-to-br from-indigo-900 to-blue-900 text-white p-6 rounded-2xl shadow-md border border-indigo-800">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -153,6 +154,7 @@
                         </div>
                     </div>
                 </div>
+                @endcan
 
                 <!-- Live BEP Target Tracker Chart -->
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
@@ -180,7 +182,8 @@
                 </div>
 
                 <!-- FEATURE 5: Closed Flock Financial Summary Card (Owner Only) -->
-                @if(Auth::user()->isOwner() && $latestHarvest)
+                @can('manage-enterprise')
+                @if($latestHarvest)
                 <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-6 rounded-2xl shadow-md border border-indigo-900">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -222,6 +225,7 @@
                     </div>
                 </div>
                 @endif
+                @endcan
 
 
                 <!-- Visual Monitoring Charts (Chart.js) -->
@@ -474,10 +478,10 @@
                                         <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Ayam Terjual</th>
                                         <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Total Berat</th>
                                         <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Nama Pembeli</th>
+                                        @can('manage-enterprise')
                                         <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Pendapatan Kotor</th>
-                                        @if(Auth::user()->isOwner())
                                         <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4 text-right">Laba Bersih</th>
-                                        @endif
+                                        @endcan
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 text-sm">
@@ -487,10 +491,10 @@
                                         <td class="py-3 px-4 text-gray-700 font-semibold">{{ number_format($harvest->total_chickens_sold) }} ekor</td>
                                         <td class="py-3 px-4 text-gray-700 font-semibold">{{ number_format($harvest->total_weight_kg, 2) }} kg</td>
                                         <td class="py-3 px-4 text-slate-600">{{ $harvest->buyer_name }}</td>
+                                        @can('manage-enterprise')
                                         <td class="py-3 px-4 font-medium text-indigo-600">Rp {{ number_format($harvest->gross_revenue, 0, ',', '.') }}</td>
-                                        @if(Auth::user()->isOwner())
                                         <td class="py-3 px-4 text-right font-extrabold text-emerald-600">Rp {{ number_format($harvest->net_profit, 0, ',', '.') }}</td>
-                                        @endif
+                                        @endcan
                                     </tr>
                                     @endforeach
                                 </tbody>
