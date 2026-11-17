@@ -131,7 +131,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | Controller | Action | View Rendered | Variables Passed (`compact` / `view`) |
 | :--- | :--- | :--- | :--- |
 | `CoopController` | `index` | `coops.index` | `coops` (with `flocks_count`) |
-| `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `globalMarketPrice` |
+| `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `coops`, `globalMarketPrice` |
 | `FlockController` | `create` | `flocks.create` | `workers`, `coops` |
 | `FlockController` | `show` | `flocks.show` | `flock`, `dailyRecords`, `harvests`, `totalMortality`, `totalCulling`, `livePopulation`, `totalFeedConsumed`, `totalHarvestSold`, `totalHarvestWeight`, `totalRevenue`, `fcr`, `ip`, `livability`, `avgWeightKg`, `harvestAge`, `chartDates`, `chartMortality`, `chartFeed`, `latestHarvest`, `bepChartData`, `totalCost`, `estimatedRevenue`, `netProfit`, `feedRequests` |
 | `FlockController` | `edit` | `flocks.edit` | `flock`, `workers`, `coops` |

@@ -175,4 +175,38 @@ class BroilerSystemTest extends TestCase
         $flockDetail->assertOk();
         $flockDetail->assertDontSee(route('reports.inventory-audit'));
     }
+
+    public function test_flocks_index_exposes_coop_and_status_filters(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $coopA = Coop::create([
+            'name' => 'Kandang Hanau',
+            'address' => 'Kec. Hanau',
+            'manager_name' => 'Harries',
+            'is_headquarters' => true,
+        ]);
+        $coopB = Coop::create([
+            'name' => 'Kandang Plasma C',
+            'address' => 'Kec. Danau Sembuluh',
+            'manager_name' => 'Mujawiri',
+            'is_headquarters' => false,
+        ]);
+
+        Flock::create([
+            'coop_id' => $coopA->id,
+            'name' => 'Kandang Hanau - Siklus Uji',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-10-01',
+            'initial_population' => 5000,
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($owner)->get(route('flocks.index'));
+        $response->assertOk();
+        $response->assertViewHas('coops', function ($coops) use ($coopA, $coopB) {
+            return $coops->contains('id', $coopA->id) && $coops->contains('id', $coopB->id);
+        });
+        $response->assertSee('Semua Unit Kandang');
+        $response->assertSee('Semua Status');
+    }
 }

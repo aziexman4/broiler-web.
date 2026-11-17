@@ -27,9 +27,12 @@ class FlockController extends Controller
         }
 
         $workers = User::where('role', 'worker')->get();
+        $coops = $user->isOwner()
+            ? Coop::orderByDesc('is_headquarters')->orderBy('name', 'asc')->get()
+            : $flocks->pluck('coop')->filter()->unique('id')->sortBy('name')->values();
         $globalMarketPrice = \App\Models\SystemSetting::where('key', 'global_market_price')->first()->value ?? 23000;
 
-        return view('flocks.index', compact('flocks', 'workers', 'globalMarketPrice'));
+        return view('flocks.index', compact('flocks', 'workers', 'coops', 'globalMarketPrice'));
     }
 
     /**
