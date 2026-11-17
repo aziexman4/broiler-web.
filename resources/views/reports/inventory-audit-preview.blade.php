@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="doc-title">LAPORAN AUDIT MUTASI GUDANG PAKAN</div>
-    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Total {{ $records->count() }} transaksi tercatat dalam sistem</div>
+    <div class="doc-subtitle"><strong>Laporan Rekapitulasi Pusat — Seluruh Unit Kandang</strong> | Periode: {{ $periodLabel ?? '-' }} | Total {{ $records->count() }} transaksi tercatat</div>
 
     <!-- KPI Summary -->
     <div class="kpi-grid">
@@ -46,7 +46,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($records as $i => $record)
+            @forelse($records as $i => $record)
                 <tr>
                     <td class="text-center">{{ $i + 1 }}</td>
                     <td class="text-center">{{ \Carbon\Carbon::parse($record->transaction_date)->format('d/m/Y') }}</td>
@@ -61,7 +61,11 @@
                     <td>{{ $record->flock ? $record->flock->name : '-' }}</td>
                     <td class="text-sm">{{ $record->notes ?? '-' }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="8" class="text-center" style="padding: 18px; color: #64748b;">Tidak ada transaksi mutasi pakan pada periode yang dipilih.</td>
+                </tr>
+            @endforelse
         </tbody>
         <tfoot>
             <tr style="background:#f1f5f9">

@@ -8,9 +8,24 @@
         </div>
     </x-slot>
 
+    @php
+        $feedIndexUrl = request()->routeIs('feed.index') ? route('feed.index') : route('feeds.index');
+        $isFiltered = isset($activeFilterType) && $activeFilterType !== 'all';
+    @endphp
+
     <div class="py-12" x-data="feedInventoryDashboard()" @kpi-updated.window="updateKPIs($event.detail)">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            
+
+            <!-- Filter Bar & Cetak Audit Mutasi Gudang A4 -->
+            <x-period-filter-bar
+                :action-url="$feedIndexUrl"
+                :reset-url="$feedIndexUrl"
+                :print-url="route('reports.inventory-audit', request()->only(['filter_mode', 'month', 'start_date', 'end_date']))"
+                print-label="Cetak Audit Gudang A4"
+                :active-filter-type="$activeFilterType ?? 'all'"
+                :period-label="$periodLabel ?? '-'"
+                :record-count="$inventories->count()"
+            />
 
             <!-- Top KPI Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -18,7 +33,9 @@
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200 relative overflow-hidden">
                     <div class="flex justify-between items-start">
                         <div>
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sisa Stok Tersedia</span>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                {{ $isFiltered ? 'Selisih Mutasi Periode' : 'Sisa Stok Tersedia' }}
+                            </span>
                             <div class="mt-2 text-3xl font-black transition-colors duration-500" :class="isCritical ? 'text-rose-600' : 'text-emerald-600'">
                                 <span x-text="currentStock">{{ number_format($currentStock, 2, ',', '.') }}</span> <span class="text-sm font-normal text-slate-500">kg</span>
                             </div>
@@ -171,14 +188,16 @@
 
                 <!-- Right Column: Mutasi History Table (2 Columns) -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-md border border-slate-200">
-                    <h3 class="text-base font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center justify-between gap-2 flex-wrap">
                         <span>📋 Riwayat Mutasi Gudang Pakan</span>
-                        <span class="text-xs font-normal text-slate-500">Total {{ $inventories->count() }} transaksi</span>
+                        <span class="text-xs font-normal text-slate-500">
+                            Periode: <strong class="text-slate-700">{{ $periodLabel ?? '-' }}</strong> ({{ $inventories->count() }} transaksi)
+                        </span>
                     </h3>
 
                     @if($inventories->isEmpty())
                         <div class="text-center py-12 text-slate-400 text-sm">
-                            Belum ada riwayat transaksi mutasi pakan.
+                            {{ $isFiltered ? 'Belum ada transaksi mutasi pakan pada periode ini.' : 'Belum ada riwayat transaksi mutasi pakan.' }}
                         </div>
                     @else
                         <div class="max-h-[500px] overflow-y-auto overflow-x-auto relative shadow-md sm:rounded-xl border border-slate-200">

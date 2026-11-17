@@ -139,17 +139,17 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `HarvestController` | `index` | `harvests.history` | `harvests`, `total_net_profit`, `total_revenue`, `total_weight`, `chartLabels`, `chartData` |
 | `HarvestController` | `create` | `harvests.create` | `flock`, `livePopulation` |
 | `HarvestController` | `exportPdf` | `reports.harvest-preview` | `flock`, `coop`, `harvest`, `livePopulation`, `totalMortality`, `totalCulling`, `totalFeed`, `fcr`, `avgWeight`, `livability`, `harvestAge`, `ip`, `docPrice`, `totalDocCost`, `totalFeedCost`, `grossRevenue`, `laborCost`, `cogs`, `totalExpenses`, `trueNetProfit`, `profitMargin`, `bepPricePerKg` |
-| `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `flocks` |
+| `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `activeFilterType`, `periodLabel`, `flocks` |
 | `AnalyticsController` | `index` | `analytics.index` | `analyticsData`, `farmAverages` |
 | `PayrollController` | `index` | `payrolls.index` | `workers`, `closedFlocks` (enriched with `worker_name`, `worker_base_salary`, `total_chickens_sold`, `total_weight_kg`, `total_feed_kg`, `harvest_age`, `achieved_fcr`, `achieved_ip`, `bonus_percentage`, `bonus_tier_label`, `recommended_bonus`), `payrolls` |
 | `PayrollController` | `payslipPreview` | `reports.payslip-preview` | `payroll`, `coop` |
 | `OvkController` | `index` | `ovk.index` | `records`, `totalSpending` |
-| `CashFlowController` | `index` | `cash_flows.index` | `records`, `total_in`, `total_out`, `balance` |
+| `CashFlowController` | `index` | `cash_flows.index` | `records`, `total_in`, `total_out`, `balance`, `activeFilterType`, `periodLabel` |
 | `WorkerController` | `index` | `workers.index` | `workers` (enriched with `flocks_count`, `closed_flocks_count`, `daily_records_count`, `activity_logs_count`, `discipline_logs_count`, `average_ip`) |
 | `ActivityLogController` | `index` | `activity_logs.index` / `partials.table_data` | `logs` |
 | `ReportController` | `dailyRecordPreview` | `reports.daily-record-preview` | `flock`, `coop`, `dailyRecords`, `totalMortality`, `totalFeed`, `livePopulation` |
-| `ReportController` | `cashFlowPreview` | `reports.cashflow-preview` | `coop` (HQ), `records`, `total_in`, `total_out`, `balance` |
-| `ReportController` | `inventoryAuditPreview` | `reports.inventory-audit-preview` | `coop` (HQ), `records`, `totalIn`, `totalOut`, `totalValue` |
+| `ReportController` | `cashFlowPreview` | `reports.cashflow-preview` | `coop` (HQ), `records`, `total_in`, `total_out`, `balance`, `activeFilterType`, `periodLabel` |
+| `ReportController` | `inventoryAuditPreview` | `reports.inventory-audit-preview` | `coop` (HQ), `records`, `totalIn`, `totalOut`, `totalValue`, `activeFilterType`, `periodLabel` |
 
 ---
 

@@ -143,20 +143,19 @@ class ReportController extends Controller
     /**
      * Preview Inventory Audit Report as printable HTML.
      */
-    public function inventoryAuditPreview()
+    public function inventoryAuditPreview(Request $request)
     {
         $coop = Coop::where('is_headquarters', true)->first();
-        $records = FeedInventory::with('flock')
-            ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        $summary = FeedInventory::getFilteredSummary($request);
 
-        $totalIn = FeedInventory::where('transaction_type', 'in')->sum('quantity_kg');
-        $totalOut = FeedInventory::where('transaction_type', 'out')->sum('quantity_kg');
-        $totalValue = FeedInventory::where('transaction_type', 'in')
-            ->selectRaw('SUM(quantity_kg * price_per_kg) as total')
-            ->value('total') ?? 0;
-
-        return view('reports.inventory-audit-preview', compact('coop', 'records', 'totalIn', 'totalOut', 'totalValue'));
+        return view('reports.inventory-audit-preview', [
+            'coop' => $coop,
+            'records' => $summary['records'],
+            'totalIn' => $summary['totalIn'],
+            'totalOut' => $summary['totalOut'],
+            'totalValue' => $summary['totalValue'],
+            'activeFilterType' => $summary['activeFilterType'],
+            'periodLabel' => $summary['periodLabel'],
+        ]);
     }
 }

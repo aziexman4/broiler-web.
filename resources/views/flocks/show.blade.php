@@ -46,14 +46,6 @@
                             <span>📋</span> Buku Recording Harian
                         </a>
                         <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
-                        <div class="px-3 py-1.5 text-[10px] font-bold uppercase text-slate-400 tracking-wider">Laporan Global</div>
-                        <a href="{{ route('reports.cash-flow') }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                            <span>💰</span> Laporan Arus Kas
-                        </a>
-                        <a href="{{ route('reports.inventory-audit') }}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                            <span>📦</span> Audit Mutasi Gudang
-                        </a>
-                        <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
                         <a href="{{ route('flocks.export-csv', $flock) }}" class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                             <span>📊</span> Download CSV (Excel)
                         </a>

@@ -9,22 +9,22 @@ use Illuminate\Http\Request;
 class FeedInventoryController extends Controller
 {
     /**
-     * Display feed inventory stock and history.
+     * Display feed inventory stock and history with optional period filtering.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $inventories = FeedInventory::with('flock')
-            ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
-
-        $totalIn = FeedInventory::where('transaction_type', 'in')->sum('quantity_kg');
-        $totalOut = FeedInventory::where('transaction_type', 'out')->sum('quantity_kg');
-        $currentStock = $totalIn - $totalOut;
-
+        $summary = FeedInventory::getFilteredSummary($request);
         $flocks = Flock::where('status', 'active')->orderBy('name', 'asc')->get();
 
-        return view('feed.index', compact('inventories', 'totalIn', 'totalOut', 'currentStock', 'flocks'));
+        return view('feed.index', [
+            'inventories' => $summary['records'],
+            'totalIn' => $summary['totalIn'],
+            'totalOut' => $summary['totalOut'],
+            'currentStock' => $summary['currentStock'],
+            'activeFilterType' => $summary['activeFilterType'],
+            'periodLabel' => $summary['periodLabel'],
+            'flocks' => $flocks,
+        ]);
     }
 
     /**

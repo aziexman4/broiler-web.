@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CashFlow;
 use App\Models\Coop;
+use App\Models\FeedInventory;
 use App\Models\Flock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,5 +104,75 @@ class BroilerSystemTest extends TestCase
         $responseRange->assertViewHas('total_in', 1500000);
         $responseRange->assertViewHas('total_out', 0);
         $responseRange->assertSee('Periode: 01 Agu 2026 — 31 Agu 2026');
+    }
+
+    public function test_feed_inventory_period_filter_and_audit_report_button_placement(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+
+        Coop::create([
+            'name' => 'Kandang Hanau',
+            'address' => 'Kec. Hanau, Kab. Seruyan',
+            'manager_name' => 'Harries',
+            'is_headquarters' => true,
+        ]);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Hanau - Siklus Uji',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-04-01',
+            'initial_population' => 5000,
+            'status' => 'active',
+        ]);
+
+        FeedInventory::create([
+            'transaction_date' => '2026-04-05',
+            'feed_name' => 'BR-1 Starter',
+            'transaction_type' => 'in',
+            'quantity_kg' => 5000,
+            'price_per_kg' => 8800,
+        ]);
+
+        FeedInventory::create([
+            'transaction_date' => '2026-04-12',
+            'feed_name' => 'Starter Distribusi',
+            'transaction_type' => 'out',
+            'quantity_kg' => 1200,
+            'flock_id' => $flock->id,
+        ]);
+
+        FeedInventory::create([
+            'transaction_date' => '2026-09-10',
+            'feed_name' => 'BR-2 Finisher',
+            'transaction_type' => 'in',
+            'quantity_kg' => 3000,
+            'price_per_kg' => 9000,
+        ]);
+
+        // Month filter on Feed Index
+        $feedResponse = $this->actingAs($owner)->get(route('feeds.index', [
+            'filter_mode' => 'month',
+            'month' => '2026-04',
+        ]));
+
+        $feedResponse->assertOk();
+        $feedResponse->assertViewHas('totalIn', 5000.0);
+        $feedResponse->assertViewHas('totalOut', 1200.0);
+        $feedResponse->assertSee('Cetak Audit Gudang A4');
+
+        // Inventory Audit A4 Preview respects filter
+        $auditResponse = $this->actingAs($owner)->get(route('reports.inventory-audit', [
+            'filter_mode' => 'month',
+            'month' => '2026-04',
+        ]));
+
+        $auditResponse->assertOk();
+        $auditResponse->assertSee('Periode: April 2026');
+        $auditResponse->assertViewHas('totalValue', 5000 * 8800.0);
+
+        // Flock detail dropdown no longer contains global audit report link
+        $flockDetail = $this->actingAs($owner)->get(route('flocks.show', $flock));
+        $flockDetail->assertOk();
+        $flockDetail->assertDontSee(route('reports.inventory-audit'));
     }
 }
