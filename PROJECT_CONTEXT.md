@@ -26,7 +26,7 @@
 
 ## 2. Database Schema & Relations
 
-Active SQLite database (`database/database.sqlite`, 21 tables including framework tables `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `migrations`, `password_reset_tokens`, `sessions`).
+Active SQLite database (`database/database.sqlite`, 20 tables including framework tables `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `migrations`, `password_reset_tokens`, `sessions`).
 
 ### 2.1. Domain Tables
 
@@ -34,7 +34,7 @@ Active SQLite database (`database/database.sqlite`, 21 tables including framewor
 | :--- | :--- | :--- | :--- |
 | **`users`** | `id` | `name` (string), `email` (string, unique), `role` (string, default `'worker'`), `base_salary` (integer, default `2500000`), `email_verified_at` (timestamp, nullable), `password` (string), `remember_token` | HasMany: `flocks` (`worker_id`), `payrolls` (`user_id`), `activityLogs` (`user_id`) |
 | **`coops`** | `id` | `name` (string), `tagline` (string, nullable), `address` (text), `phone` (string, nullable), `email` (string, nullable), `manager_name` (string), `is_headquarters` (boolean, default `false`) | HasMany: `flocks` (`coop_id`) |
-| **`flocks`** | `id` | `coop_id` (nullable), `name` (string), `breed` (string), `start_date` (date), `initial_population` (uint), `status` (enum `'active'`, `'closed'`, default `'active'`), `stock_pre_starter_kg` (decimal 10,2, default `0`), `stock_starter_kg` (decimal 10,2, default `0`), `stock_finisher_kg` (decimal 10,2, default `0`), `worker_id` (nullable), `closed_at` (timestamp, nullable) | BelongsTo: `coop` $\rightarrow$ `coops.id` (`nullOnDelete`), `worker` $\rightarrow$ `users.id` (`nullOnDelete`). HasMany: `dailyRecords`, `feedRequests`, `growthSamplings`, `harvests` |
+| **`flocks`** | `id` | `coop_id` (nullable), `name` (string), `breed` (string), `start_date` (date), `initial_population` (uint), `status` (enum `'active'`, `'closed'`, default `'active'`), `stock_pre_starter_kg` (decimal 10,2, default `0`), `stock_starter_kg` (decimal 10,2, default `0`), `stock_finisher_kg` (decimal 10,2, default `0`), `worker_id` (nullable), `closed_at` (timestamp, nullable) | BelongsTo: `coop` $\rightarrow$ `coops.id` (`nullOnDelete`), `worker` $\rightarrow$ `users.id` (`nullOnDelete`). HasMany: `dailyRecords`, `feedRequests`, `harvests` |
 | **`daily_records`** | `id` | `flock_id`, `record_date` (date), `mortality` (uint, default `0`), `culling` (uint, default `0`), `feed_pre_starter_kg` (decimal 8,2, default `0.00`), `feed_starter_kg` (decimal 8,2, default `0.00`), `feed_finisher_kg` (decimal 8,2, default `0.00`), `average_weight_gram` (integer, nullable) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`cascadeOnDelete`). *Virtual Accessor*: `feed_consumed_kg` |
 | **`harvests`** | `id` | `flock_id`, `harvest_date` (date), `total_chickens_sold` (uint), `total_weight_kg` (decimal 10,2), `buyer_name` (string), `chicken_price_per_kg` (decimal 12,2, default `0`), `feed_price_per_kg` (decimal 12,2, default `0`), `total_feed_cost` (decimal 15,2, default `0`), `gross_revenue` (decimal 15,2, default `0`), `net_profit` (decimal 15,2, default `0`), `revenue` (decimal 15,2, default `0`) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`cascadeOnDelete`) |
 | **`feed_inventories`** | `id` | `transaction_date` (date), `feed_name` (string), `transaction_type` (enum `'in'`, `'out'`), `quantity_kg` (decimal 10,2), `price_per_kg` (integer, nullable), `notes` (string, nullable), `flock_id` (nullable) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`nullOnDelete`) |
@@ -44,7 +44,6 @@ Active SQLite database (`database/database.sqlite`, 21 tables including framewor
 | **`cash_flows`** | `id` | `transaction_date` (date), `description` (string), `type` (enum `'in'`, `'out'`), `amount` (integer) | Standalone |
 | **`activity_logs`** | `id` | `user_id`, `action` (string), `model_type` (string), `description` (string), `changes` (json, nullable) | BelongsTo: `user` $\rightarrow$ `users.id` (`cascadeOnDelete`) |
 | **`system_settings`** | `id` | `key` (string, unique), `value` (string) | Standalone (`global_market_price`, `doc_price`, `feed_price`) |
-| **`growth_samplings`** | `id` | `flock_id`, `sampling_date` (date), `week_number` (uint), `average_weight_g` (uint) | BelongsTo: `flock` $\rightarrow$ `flocks.id` (`cascadeOnDelete`) *(orphaned)* |
 
 ### 2.2. Default Seeded Accounts (`database/seeders/UserSeeder.php`)
 
@@ -163,8 +162,8 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | **BUG-04** | 🟡 Medium | `resources/views/flocks/edit.blade.php` | Created missing `flocks/edit.blade.php` view with `<x-app-layout>`, dark mode support, and `PUT` form to `route('flocks.update', $flock)`. | **Fixed** |
 | **BUG-05** | 🟡 Medium | `routes/web.php` | Moved `/settings/update-price`, `/feeds`, `/ovk`, `/cash-flows`, `/workers`, `/activity-logs`, `/reports/cash-flow`, and `/reports/inventory-audit` inside `can:manage-enterprise`. | **Fixed** |
 | **BUG-06** | 🟡 Medium | `routes/web.php` | Restricted `Route::resource` with `->only(['index', 'store'])` on `feeds`, `ovk`, `cash-flows`, `payrolls` and `->only(['index', 'store', 'destroy'])` on `workers`. | **Fixed** |
-| **DEBT-01**| 🟢 Low | `HarvestController@exportPdf` & `resources/views/` | `exportPdf()` imports `DomPDF` (`Pdf`), yet returns HTML `view('reports.harvest-preview')`. Orphaned PDF templates exist at `resources/views/harvests/pdf.blade.php` and `resources/views/reports/flock_pdf.blade.php`. | **Open** |
-| **DEBT-02**| 🟢 Low | `app/Models/GrowthSampling.php` | `growth_samplings` table & model exist without controller or routes (superseded by `daily_records.average_weight_gram`). | **Open** |
+| **DEBT-01**| 🟢 Low | `HarvestController@exportPdf` & `resources/views/` | Removed unused `Pdf` imports in `ReportController`/`HarvestController` and deleted orphaned `resources/views/harvests/pdf.blade.php` & `resources/views/reports/flock_pdf.blade.php`. | **Fixed** |
+| **DEBT-02**| 🟢 Low | `app/Models/GrowthSampling.php` | Removed `GrowthSampling` model, `Flock::growthSamplings()`, and added migration `2026_11_17_000001_drop_growth_samplings_table.php` (superseded by `daily_records.average_weight_gram`). | **Fixed** |
 
 ---
 

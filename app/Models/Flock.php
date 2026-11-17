@@ -85,14 +85,6 @@ class Flock extends Model
     }
 
     /**
-     * Get all growth samplings for the flock.
-     */
-    public function growthSamplings(): HasMany
-    {
-        return $this->hasMany(GrowthSampling::class);
-    }
-
-    /**
      * Get all harvests for the flock.
      */
     public function harvests(): HasMany
