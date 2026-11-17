@@ -74,9 +74,9 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` | `auth` only *(no role check)* |
 | `GET/PATCH/DELETE /profile` | `profile.{edit,update,destroy}` | `ProfileController` | `auth` |
 | `RESOURCE /flocks` | `flocks.*` | `FlockController` | `FlockPolicy` (`create`/`delete`: owner; `view`/`update`: owner or assigned worker) |
-| `GET /flocks/{flock}/export-csv` | `flocks.export-csv` | `ReportController@exportCsv` | `auth` only *(no Policy check)* |
+| `GET /flocks/{flock}/export-csv` | `flocks.export-csv` | `ReportController@exportCsv` | `FlockPolicy@view` |
 | `GET /flocks/{flock}/export-pdf` | `flocks.export-pdf` | `HarvestController@exportPdf` | `FlockPolicy@view` |
-| `GET /flocks/{flock}/report/daily-record` | `reports.daily-record` | `ReportController@dailyRecordPreview` | `auth` only *(no Policy check)* |
+| `GET /flocks/{flock}/report/daily-record` | `reports.daily-record` | `ReportController@dailyRecordPreview` | `FlockPolicy@view` |
 | `GET /flocks/{flock}/daily-records/create` | `daily_records.create` | `DailyRecordController@create` | `FlockPolicy@update` |
 | `POST /flocks/{flock}/daily-records` | `daily_records.store` | `DailyRecordController@store` | `FlockPolicy@update` |
 | `PUT /daily-records/{dailyRecord}` | `daily_records.update` | `DailyRecordController@update` | `FlockPolicy@update` |

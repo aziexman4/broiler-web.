@@ -151,7 +151,7 @@
                             Sistem P2MW 2026
                         </p>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                            Dikembangkan oleh <span class="font-bold text-slate-700 dark:text-slate-300">M Aulia Aziz 231002019</span>
+                            Dikembangkan oleh <span class="font-bold text-slate-700 dark:text-slate-300">M Aulia Aziz 2310020119</span>
                         </p>
                     </footer>
                 </main>

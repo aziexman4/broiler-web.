@@ -79,7 +79,7 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                                        <th class="py-3 px-4">Nama Kandang</th>
+                                        <th class="py-3 px-4">Nama Kandang & Unit</th>
                                         <th class="py-3 px-4">Ras / Breed</th>
                                         <th class="py-3 px-4">Anak Kandang (Worker)</th>
                                         <th class="py-3 px-4">Tanggal Mulai</th>
@@ -90,16 +90,23 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-sm">
                                     @foreach($flocks as $flock)
-                                        <tr x-show="search === '' || '{{ strtolower($flock->name) }}'.includes(search.toLowerCase()) || '{{ strtolower($flock->status) }}'.includes(search.toLowerCase())" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
-                                            <td class="py-3 px-4 font-semibold text-slate-900">{{ $flock->name }}</td>
-                                            <td class="py-3 px-4 text-slate-600">{{ $flock->breed }}</td>
-                                            <td class="py-3 px-4 text-gray-700">
+                                        <tr x-show="search === '' || '{{ strtolower($flock->name) }}'.includes(search.toLowerCase()) || '{{ strtolower($flock->coop->name ?? '') }}'.includes(search.toLowerCase()) || '{{ strtolower($flock->status) }}'.includes(search.toLowerCase())" class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-150">
+                                            <td class="py-3 px-4">
+                                                <div class="font-semibold text-slate-900 dark:text-slate-100">{{ $flock->name }}</div>
+                                                @if($flock->coop)
+                                                    <div class="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
+                                                        📍 {{ $flock->coop->name }}
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ $flock->breed }}</td>
+                                            <td class="py-3 px-4 text-gray-700 dark:text-slate-300">
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
                                                     👤 {{ $flock->worker->name ?? 'Belum Ditugaskan' }}
                                                 </span>
                                             </td>
-                                            <td class="py-3 px-4 text-slate-600">{{ \Carbon\Carbon::parse($flock->start_date)->format('d M Y') }}</td>
-                                            <td class="py-3 px-4 text-slate-600">{{ number_format($flock->initial_population) }} ekor</td>
+                                            <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ \Carbon\Carbon::parse($flock->start_date)->format('d M Y') }}</td>
+                                            <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ number_format($flock->initial_population) }} ekor</td>
                                             <td class="py-3 px-4">
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $flock->status === 'active' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-gray-300' }}">
                                                     {{ ucfirst($flock->status) }}

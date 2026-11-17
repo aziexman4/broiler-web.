@@ -183,7 +183,7 @@
             </div>
             <p class="text-slate-500 text-sm text-center md:text-left">
                 &copy; {{ date('Y') }} Dibangun khusus untuk Program P2MW.<br>
-                Dikembangkan oleh <span class="text-slate-300 font-semibold">M Aulia Aziz 231002019</span>
+                Dikembangkan oleh <span class="text-slate-300 font-semibold">M Aulia Aziz 2310020119</span>
             </p>
         </div>
     </footer>

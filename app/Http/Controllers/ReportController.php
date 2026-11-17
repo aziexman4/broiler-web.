@@ -6,8 +6,8 @@ use App\Models\CashFlow;
 use App\Models\Coop;
 use App\Models\FeedInventory;
 use App\Models\Flock;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class ReportController extends Controller
@@ -17,6 +17,8 @@ class ReportController extends Controller
      */
     public function exportCsv(Flock $flock)
     {
+        Gate::authorize('view', $flock);
+
         $filename = "laporan_kandang_" . Str::slug($flock->name) . "_" . date('Y-m-d') . ".csv";
 
         $headers = [
@@ -102,6 +104,8 @@ class ReportController extends Controller
      */
     public function dailyRecordPreview(Flock $flock)
     {
+        Gate::authorize('view', $flock);
+
         $flock->load('coop');
         $coop = $flock->coop;
         $dailyRecords = $flock->dailyRecords()->orderBy('record_date', 'asc')->get();

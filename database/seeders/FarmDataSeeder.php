@@ -64,7 +64,7 @@ class FarmDataSeeder extends Seeder
             'transaction_date' => Carbon::now()->subMonths(11)->toDateString(),
             'feed_name' => 'BR-1 Super Starter',
             'transaction_type' => 'in',
-            'quantity_kg' => 30000,
+            'quantity_kg' => 110000,
             'price_per_kg' => 8800,
             'notes' => 'Pengadaan Pakan Starter Awal Tahun (PT Japfa Comfeed)',
         ]);
@@ -73,7 +73,7 @@ class FarmDataSeeder extends Seeder
             'transaction_date' => Carbon::now()->subMonths(6)->toDateString(),
             'feed_name' => 'BR-2 Finisher Premium',
             'transaction_type' => 'in',
-            'quantity_kg' => 25000,
+            'quantity_kg' => 95000,
             'price_per_kg' => 8900,
             'notes' => 'Pengadaan Pakan Finisher Mid-Year (PT Charoen Pokphand)',
         ]);
@@ -279,14 +279,12 @@ class FarmDataSeeder extends Seeder
             // Untuk flock yang statusnya 'closed', kita asumsikan mereka juga menerima pakan total yang dikonsumsi
             // Mari hitung estimasi total pakan yang dihabiskan untuk flock yang closed, agar disuntikkan juga ke FeedInventory
             $daysToRecord = ($def['status'] === 'closed') ? 35 : Carbon::parse($def['start_date'])->diffInDays(Carbon::now());
-            
+            $popFactor = $def['initial_population'] / 1000;
+
             if ($def['status'] === 'closed') {
-                $totalEstimatedPreStarter = 14 * 40; // Kasar rata-rata
-                $totalEstimatedStarter = 10 * 80;
-                $totalEstimatedFinisher = 11 * 120;
-                $phases['Pre-Starter'] = $totalEstimatedPreStarter;
-                $phases['Starter'] = $totalEstimatedStarter;
-                $phases['Finisher'] = $totalEstimatedFinisher;
+                $phases['Pre-Starter'] = round(650 * $popFactor, 0);
+                $phases['Starter'] = round(980 * $popFactor, 0);
+                $phases['Finisher'] = round(1550 * $popFactor, 0);
             }
 
             foreach ($phases as $phase => $amount) {
@@ -326,18 +324,36 @@ class FarmDataSeeder extends Seeder
 
             // Determine number of days of daily records to generate
             $daysToRecord = ($def['status'] === 'closed') ? 35 : Carbon::parse($def['start_date'])->diffInDays(Carbon::now());
-            
+
+            // Agronomic profile per coop unit so closed cycles demonstrate realistic FCR (1.47 - 1.73)
+            // and all 3 IP bonus tiers (Hanau: IP >= 400 [20%], Seruyan: IP 350-399 [15%], Plasma C: IP 300-349 [10%])
+            if ($coopId === $coopHanau->id) {
+                $baseGramPerBird = 18.0;
+                $slopeGramPerBird = 3.92;
+                $targetHarvestWeightKg = 2.16 + (rand(0, 3) / 100);
+            } elseif ($coopId === $coopSeruyan->id) {
+                $baseGramPerBird = 18.8;
+                $slopeGramPerBird = 4.02;
+                $targetHarvestWeightKg = 2.06 + (rand(0, 3) / 100);
+            } else {
+                $baseGramPerBird = 19.8;
+                $slopeGramPerBird = 4.15;
+                $targetHarvestWeightKg = 1.96 + (rand(0, 2) / 100);
+            }
+
             $accumulatedFeed = 0;
             $accumulatedMortality = 0;
             $accumulatedCulling = 0;
 
             for ($day = 1; $day <= $daysToRecord; $day++) {
                 $recordDate = Carbon::parse($def['start_date'])->addDays($day - 1)->toDateString();
-                
-                // Realistic feed curve: starts around 25-35kg and scales up to ~220kg/day
-                $dailyFeed = round(25 + ($day * 5.2) + rand(-3, 3), 1);
-                $dailyMortality = rand(1, 4);
-                $dailyCulling = (rand(1, 10) > 7) ? rand(1, 2) : 0;
+
+                // Realistic feed curve scaled to flock population (~3.1 - 3.3 kg/bird over 35 days)
+                $feedGramPerBird = $baseGramPerBird + ($day * $slopeGramPerBird);
+                $dailyFeed = round((($def['initial_population'] * $feedGramPerBird) / 1000) + rand(-8, 8), 1);
+                $dailyMortality = rand(1, 3);
+                $dailyCulling = (rand(1, 10) > 8) ? 1 : 0;
+                $avgWeightGram = (int) round(42 + (($targetHarvestWeightKg * 1000 - 42) * ($day / 35)));
 
                 $preStarter = 0;
                 $starter = 0;
@@ -358,6 +374,7 @@ class FarmDataSeeder extends Seeder
                     'feed_pre_starter_kg' => $preStarter,
                     'feed_starter_kg' => $starter,
                     'feed_finisher_kg' => $finisher,
+                    'average_weight_gram' => $avgWeightGram,
                 ]);
 
                 $accumulatedFeed += $dailyFeed;
@@ -368,9 +385,9 @@ class FarmDataSeeder extends Seeder
             // Create Harvest and Payroll if the flock is closed
             if ($def['status'] === 'closed') {
                 $chickensSold = max(0, $def['initial_population'] - $accumulatedMortality - $accumulatedCulling);
-                
-                // Average weight around 1.95 - 2.15 kg
-                $avgWeight = 1.95 + (rand(5, 20) / 100);
+
+                // Realistic harvest weight per unit tier (1.96 - 2.19 kg)
+                $avgWeight = $targetHarvestWeightKg;
                 $totalWeightKg = round($chickensSold * $avgWeight, 2);
 
                 $grossRevenue = $totalWeightKg * $def['price_per_kg'];

@@ -8,7 +8,12 @@
                         {{ ucfirst($flock->status) }}
                     </span>
                 </h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Ras: {{ $flock->breed }} | Chick-in: {{ \Carbon\Carbon::parse($flock->start_date)->format('d M Y') }} (Umur: {{ $harvestAge }} hari)</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    @if($flock->coop)
+                        <span class="font-semibold text-indigo-600 dark:text-indigo-400">📍 {{ $flock->coop->name }}</span> |
+                    @endif
+                    Ras: {{ $flock->breed }} | Chick-in: {{ \Carbon\Carbon::parse($flock->start_date)->format('d M Y') }} (Umur: {{ $harvestAge }} hari)
+                </p>
                 @if($flock->status === 'active')
                     @php $progressPercent = min(100, ($harvestAge / 35) * 100); @endphp
                     <div class="mt-2 w-full md:w-72 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden" title="Progres Umur Ayam (Target Standar: 35 Hari)">

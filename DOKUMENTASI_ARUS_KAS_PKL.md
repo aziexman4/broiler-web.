@@ -2,7 +2,7 @@
 
 **Objek Studi Kasus:** Peternakan Broiler Hanau — Desa Pembuang Hulu I, Kec. Hanau, Kab. Seruyan, Kalimantan Tengah  
 **Sistem:** Sistem Informasi Manajemen Kepegawaian dan Monitoring Produktivitas Kandang Ayam Broiler (Laravel 13.8)  
-**Periode Data Evaluasi:** 14 Februari 2026 – 14 Oktober 2026 (6 Entri Transaksi)
+**Periode Data Evaluasi:** 05 Februari 2026 – 14 November 2026 (33 Entri Transaksi)
 
 ---
 
@@ -69,14 +69,13 @@ $total_out = CashFlow::where('type', 'out')->sum('amount');
 $balance = $total_in - $total_out;
 ```
 
-**Mekanisme Periode Tanggal & Pengurutan:**
-* Saat ini belum terdapat filter rentang tanggal berbasis input pengguna (misalnya parameter `start_date`/`end_date` pada request); sistem menarik **seluruh** data dari tabel `cash_flows`.
-* Pada tampilan laporan cetak (`resources/views/reports/cashflow-preview.blade.php`), subjudul **Periode** diturunkan otomatis dari koleksi `$records` yang terurut menurun (`desc`):
-  * Tanggal awal diambil dari `$records->last()->transaction_date` (transaksi paling awal).
-  * Tanggal akhir diambil dari `$records->first()->transaction_date` (transaksi paling akhir).
+**Mekanisme Filter Periode Dua Mode (Mutually Exclusive) & Pengurutan:**
+* Method `CashFlow::getFilteredSummary(Request $request)` mendukung 2 mode filter yang saling bergantian pada halaman manajemen (`cash_flows/index.blade.php`) dan laporan cetak (`reports/cashflow-preview.blade.php`):
+  1. **Mode Per Bulan (`filter_mode = 'month'`):** Menyaring `transaction_date` menggunakan `whereYear` dan `whereMonth` sesuai input `YYYY-MM`, serta menampilkan subjudul bulan berbahasa Indonesia (contoh: `Periode: April 2026`).
+  2. **Mode Rentang Tanggal (`filter_mode = 'range'`):** Menyaring `transaction_date` menggunakan `whereDate('>=', $startDate)` dan/atau `whereDate('<=', $endDate)`, serta menampilkan subjudul rentang tanggal tersebut.
+  3. **Tanpa Filter (`all`):** Menarik seluruh transaksi dan menampilkan rentang otomatis dari transaksi paling awal (`$records->last()->transaction_date`) hingga transaksi paling akhir (`$records->first()->transaction_date`).
 * Sebelum dirender ke tabel rincian cetak, koleksi diurutkan ulang secara kronologis menaik (`$records->sortBy('transaction_date')->values()`) agar pembacaan buku kas urut dari tanggal terlama hingga terbaru.
-
-*Catatan observasi UI:* Halaman `resources/views/cash_flows/index.blade.php` menampilkan 3 kartu KPI, form input transaksi, dan tabel riwayat kas, namun saat ini belum menyediakan tombol pintas cetak menuju `route('reports.cash-flow')`, belum merender kotak notifikasi `session('success')`, serta masih menggunakan kelas terang (`bg-white`) tanpa kelas `dark:*`.
+* Halaman `resources/views/cash_flows/index.blade.php` telah dilengkapi dukungan penuh mode gelap (`dark:*`), notifikasi `session('success')` & validasi error, serta tombol pintas **Cetak Laporan A4** yang meneruskan parameter filter aktif ke `route('reports.cash-flow')`.
 
 ---
 
@@ -98,26 +97,29 @@ Karena transaksi pada `cash_flows` bersifat lintas kandang/global, sistem menera
 
 ## Bagian II — Analisis Keuangan Agribisnis (Laporan & Sidang PKL)
 
-### Data Laporan Arus Kas Operasional
+### Ringkasan Bulanan Arus Kas Operasional (Februari – November 2026)
 
-| No | Tanggal | Keterangan Transaksi | Jenis | Debet (Masuk) | Kredit (Keluar) |
-| :-: | :-: | :--- | :-: | --: | --: |
-| 1 | 14/02/2026 | Pembelian Sekam Alas Kandang (3 Truk) | **KELUAR** | - | Rp 3.600.000 |
-| 2 | 14/03/2026 | Pembayaran Listrik & Token Kandang Utama | **KELUAR** | - | Rp 1.850.000 |
-| 3 | 14/04/2026 | Hasil Penjualan Pupuk Karungan (Kotoran Ayam) | **MASUK** | Rp 4.500.000 | - |
-| 4 | 14/06/2026 | Perbaikan Kipas Ventilation Blower | **KELUAR** | - | Rp 1.200.000 |
-| 5 | 14/08/2026 | Hasil Penjualan Karung Pakan Bekas | **MASUK** | Rp 2.100.000 | - |
-| 6 | 14/10/2026 | Pembelian Sekam Baru untuk Siklus Aktif | **KELUAR** | - | Rp 4.200.000 |
-| | | **TOTAL** | | **Rp 6.600.000** | **Rp 10.850.000** |
-| | | **SALDO AKHIR (NET CASH FLOW)** | | **-Rp 4.250.000** | |
+| Bulan Periode | Jumlah Transaksi | Total Debet (Kas Masuk) | Total Kredit (Kas Keluar) | Saldo Akhir Bulanan |
+| :--- | :-: | --: | --: | --: |
+| Februari 2026 | 3 | Rp 1.850.000 | Rp 4.550.000 | -Rp 2.700.000 |
+| Maret 2026 | 2 | Rp 1.450.000 | Rp 1.850.000 | -Rp 400.000 |
+| April 2026 | 4 | Rp 5.850.000 | Rp 4.700.000 | +Rp 1.150.000 |
+| Mei 2026 | 2 | Rp 0 | Rp 3.250.000 | -Rp 3.250.000 |
+| Juni 2026 | 4 | Rp 3.930.000 | Rp 3.600.000 | +Rp 330.000 |
+| Juli 2026 | 2 | Rp 1.600.000 | Rp 1.050.000 | +Rp 550.000 |
+| Agustus 2026 | 5 | Rp 5.300.000 | Rp 5.900.000 | -Rp 600.000 |
+| September 2026 | 2 | Rp 1.750.000 | Rp 1.250.000 | +Rp 500.000 |
+| Oktober 2026 | 4 | Rp 4.650.000 | Rp 5.950.000 | -Rp 1.300.000 |
+| November 2026 | 5 | Rp 3.800.000 | Rp 3.900.000 | -Rp 100.000 |
+| **TOTAL (05 Feb – 14 Nov 2026)** | **33** | **Rp 30.180.000** | **Rp 36.000.000** | **-Rp 5.820.000** |
 
 ---
 
 ### 1. Ringkasan Kondisi Arus Kas
-Selama periode laporan **14 Februari 2026 – 14 Oktober 2026**, tercatat **6 entri transaksi** kas operasional non-panen pada Peternakan Broiler Hanau dengan total perputaran dana bruto sebesar **Rp 17.450.000**:
-* **Total Uang Masuk (Debet):** **Rp 6.600.000** (37,82% dari total perputaran kas; ditampilkan ringkas pada kartu KPI sebesar `6,6Jt`), berasal dari 2 transaksi penjualan produk sampingan peternakan.
-* **Total Uang Keluar (Kredit):** **Rp 10.850.000** (62,18% dari total perputaran kas; ditampilkan ringkas pada kartu KPI sebesar `10,9Jt`), berasal dari 4 transaksi pembiayaan operasional rutin kandang.
-* **Makna Saldo Akhir (Net Cash Flow):** Saldo akhir tercatat sebesar **-Rp 4.250.000** (ditampilkan ringkas sebagai `-4,3Jt`). Angka ini menunjukkan bahwa pemasukan kas sampingan senilai Rp 6.600.000 telah mampu menutupi **60,83%** dari total biaya operasional pendukung (sekam, listrik, dan perawatan peralatan), sedangkan sisa kebutuhan biaya sebesar Rp 4.250.000 ditutup dari pendapatan utama penjualan ayam hidup.
+Selama periode laporan **05 Februari 2026 – 14 November 2026**, tercatat **33 entri transaksi** kas operasional non-panen pada Peternakan Broiler Hanau dengan total perputaran dana bruto sebesar **Rp 66.180.000**:
+* **Total Uang Masuk (Debet):** **Rp 30.180.000** (ditampilkan ringkas pada kartu KPI sebesar `30,2Jt`), berasal dari penjualan produk sampingan peternakan (pupuk kotoran ayam, karung pakan bekas, dan sisa sekam/limbah non-ayam).
+* **Total Uang Keluar (Kredit):** **Rp 36.000.000** (ditampilkan ringkas pada kartu KPI sebesar `36,0Jt`), berasal dari pembiayaan operasional rutin kandang (sekam alas kandang, listrik & air, gas LPG pemanas *brooding* DOC, serta perawatan kipas *blower* & instalasi).
+* **Makna Saldo Akhir (Net Cash Flow):** Saldo akhir kumulatif tercatat sebesar **-Rp 5.820.000** (ditampilkan ringkas sebagai `-5,8Jt`). Angka ini menunjukkan bahwa pemasukan kas sampingan senilai Rp 30.180.000 telah mampu menutupi **83,83%** dari total biaya operasional pendukung non-pakan/DOC, sedangkan sisa kebutuhan biaya sebesar Rp 5.820.000 ditutup dari pendapatan utama penjualan ayam hidup.
 
 ---
 
