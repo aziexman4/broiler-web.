@@ -194,5 +194,8 @@ Defined in `routes/web.php` and `routes/auth.php`.
    - Flock-specific A4 print views (`daily-record-preview`, `harvest-preview`, `payslip-preview`) pass `$coop = $flock->coop` (or `$payroll->flock?->coop`) to `layouts.print`.
    - Global A4 print views (`cashflow-preview`, `inventory-audit-preview`) use the Headquarters unit (`is_headquarters = true`, default: **Kandang Hanau**) and include the subtitle `"Laporan Rekapitulasi Pusat — Seluruh Unit Kandang"`.
    - `FarmDataSeeder.php` seeds 3 Coop units (`Kandang Hanau` [HQ], `Kandang Seruyan Utama`, `Kandang Plasma C`), links all 12 flocks via `coop_id`, and computes tiered IP bonuses on seeded payrolls. Orphaned `JuneFlockSeeder.php` removed.
+10. **Unified Flock Metrics Service (`App\Services\FlockMetricsService`)**:
+   - `FlockMetricsService::calculateForFlock()` is the single source of truth for `total_mortality`, `total_culling`, `live_population`, `total_feed_kg`, `fcr` (`round 3`), `livability` (`round 2`), `avg_weight_kg` (`round 2`), `harvest_age`, and `ip` (`round 2`) across `FlockController`, `HarvestController`, `PayrollController`, `AnalyticsController`, `WorkerController`, `ReportController`, and `FarmDataSeeder`.
+   - `FlockMetricsService::evaluateIpBonus()` centralizes the Phase 2 tiered IP bonus formula (`>= 400: 20%`, `350–399: 15%`, `300–349: 10%`, `< 300: 0%`).
 
 

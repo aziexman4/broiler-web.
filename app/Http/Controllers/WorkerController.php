@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Carbon\Carbon;
+use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -35,30 +35,8 @@ class WorkerController extends Controller
                 if ($flock->status === 'closed' && $harvests->isNotEmpty()) {
                     $closedFlocksCount++;
 
-                    $totalMortality = $dailyRecords->sum('mortality');
-                    $totalCulling = $dailyRecords->sum('culling');
-                    $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
-
-                    $totalFeed = (float) $dailyRecords->sum('feed_pre_starter_kg')
-                        + (float) $dailyRecords->sum('feed_starter_kg')
-                        + (float) $dailyRecords->sum('feed_finisher_kg');
-
-                    $totalHarvestSold = $harvests->sum('total_chickens_sold');
-                    $totalHarvestWeight = (float) $harvests->sum('total_weight_kg');
-
-                    $fcr = $totalHarvestWeight > 0 ? ($totalFeed / $totalHarvestWeight) : 0;
-                    $livability = $flock->initial_population > 0 ? (($livePopulation / $flock->initial_population) * 100) : 0;
-                    $avgWeightKg = $totalHarvestSold > 0 ? ($totalHarvestWeight / $totalHarvestSold) : 0;
-
-                    $startDate = Carbon::parse($flock->start_date);
-                    $endDate = $flock->closed_at
-                        ? Carbon::parse($flock->closed_at)
-                        : Carbon::parse($harvests->max('harvest_date'));
-                    $harvestAge = max(1, intval($startDate->diffInDays($endDate)));
-
-                    $ip = ($fcr > 0 && $harvestAge > 0)
-                        ? round(($livability * $avgWeightKg) / ($fcr * $harvestAge) * 100, 2)
-                        : 0;
+                    $metrics = FlockMetricsService::calculateForFlock($flock, $dailyRecords, $harvests);
+                    $ip = $metrics['ip'];
 
                     if ($ip > 0) {
                         $totalIp += $ip;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Coop;
 use App\Models\Flock;
 use App\Models\User;
+use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -81,27 +82,22 @@ class FlockController extends Controller
         $dailyRecords = $flock->dailyRecords()->orderBy('record_date', 'asc')->get();
         $harvests = $flock->harvests()->orderBy('harvest_date', 'desc')->get();
 
-        $totalMortality = $dailyRecords->sum('mortality');
-        $totalCulling = $dailyRecords->sum('culling');
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
-        $totalFeedConsumed = $dailyRecords->sum('feed_consumed_kg');
-
+        $metrics = FlockMetricsService::calculateForFlock($flock, $dailyRecords, $harvests);
         $canManageEnterprise = Gate::allows('manage-enterprise');
-        $totalHarvestSold = $harvests->sum('total_chickens_sold');
-        $totalHarvestWeight = $harvests->sum('total_weight_kg');
-        $totalRevenue = $canManageEnterprise ? $harvests->sum('revenue') : 0;
 
-        $fcr = $totalHarvestWeight > 0 ? round($totalFeedConsumed / $totalHarvestWeight, 3) : 0;
-        $livability = $flock->initial_population > 0 ? round(($livePopulation / $flock->initial_population) * 100, 2) : 0;
-        $avgWeightKg = $totalHarvestSold > 0 ? round($totalHarvestWeight / $totalHarvestSold, 2) : 0;
+        $totalMortality = $metrics['total_mortality'];
+        $totalCulling = $metrics['total_culling'];
+        $livePopulation = $metrics['live_population'];
+        $totalFeedConsumed = $metrics['total_feed_kg'];
+        $totalHarvestSold = $metrics['total_harvest_sold'];
+        $totalHarvestWeight = $metrics['total_harvest_weight_kg'];
+        $totalRevenue = $canManageEnterprise ? $metrics['total_revenue'] : 0;
 
-        $startDate = \Carbon\Carbon::parse($flock->start_date);
-        $endDate = $harvests->count() > 0 
-            ? \Carbon\Carbon::parse($harvests->max('harvest_date')) 
-            : \Carbon\Carbon::now();
-        
-        $harvestAge = max(1, intval($startDate->diffInDays($endDate)));
-        $ip = ($fcr > 0 && $harvestAge > 0) ? round(($livability * $avgWeightKg) / ($fcr * $harvestAge) * 100, 2) : 0;
+        $fcr = $metrics['fcr'];
+        $livability = $metrics['livability'];
+        $avgWeightKg = $metrics['avg_weight_kg'];
+        $harvestAge = $metrics['harvest_age'];
+        $ip = $metrics['ip'];
 
         $chartDates = $dailyRecords->pluck('record_date')->map(fn($date) => \Carbon\Carbon::parse($date)->format('d M'))->toArray();
         $chartMortality = $dailyRecords->pluck('mortality')->toArray();

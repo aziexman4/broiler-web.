@@ -7,6 +7,7 @@ use App\Models\Coop;
 use App\Models\FeedInventory;
 use App\Models\Flock;
 use App\Models\User;
+use App\Services\FlockMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -208,5 +209,65 @@ class BroilerSystemTest extends TestCase
         });
         $response->assertSee('Semua Unit Kandang');
         $response->assertSee('Semua Status');
+    }
+
+    public function test_flock_metrics_service_is_consistent_across_controllers_and_bonus_tiers(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker', 'base_salary' => 3000000]);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Konsistensi',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-09-01',
+            'closed_at' => '2026-10-06',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+
+        $flock->dailyRecords()->create([
+            'record_date' => '2026-09-15',
+            'mortality' => 20,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 1000,
+            'feed_starter_kg' => 1000,
+            'feed_finisher_kg' => 1000,
+        ]);
+
+        $flock->harvests()->create([
+            'harvest_date' => '2026-10-06',
+            'total_chickens_sold' => 980,
+            'total_weight_kg' => 1960,
+            'buyer_name' => 'PT Uji Konsistensi',
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'total_feed_cost' => 27000000,
+            'gross_revenue' => 45080000,
+            'net_profit' => 18080000,
+            'revenue' => 45080000,
+        ]);
+
+        $metrics = FlockMetricsService::calculateForFlock($flock);
+        $this->assertSame(1.531, $metrics['fcr']);
+        $this->assertSame(98.0, $metrics['livability']);
+        $this->assertSame(2.0, $metrics['avg_weight_kg']);
+        $this->assertSame(35, $metrics['harvest_age']);
+        $this->assertSame(365.77, $metrics['ip']);
+
+        $showResponse = $this->actingAs($owner)->get(route('flocks.show', $flock));
+        $showResponse->assertOk();
+        $showResponse->assertViewHas('fcr', $metrics['fcr']);
+        $showResponse->assertViewHas('ip', $metrics['ip']);
+
+        $pdfResponse = $this->actingAs($owner)->get(route('flocks.export-pdf', $flock));
+        $pdfResponse->assertOk();
+        $pdfResponse->assertViewHas('fcr', $metrics['fcr']);
+        $pdfResponse->assertViewHas('ip', $metrics['ip']);
+
+        $this->assertSame(20, FlockMetricsService::evaluateIpBonus(410, 3000000)['bonus_percentage']);
+        $this->assertSame(15, FlockMetricsService::evaluateIpBonus(365.77, 3000000)['bonus_percentage']);
+        $this->assertSame(10, FlockMetricsService::evaluateIpBonus(320, 3000000)['bonus_percentage']);
+        $this->assertSame(0, FlockMetricsService::evaluateIpBonus(280, 3000000)['bonus_percentage']);
     }
 }

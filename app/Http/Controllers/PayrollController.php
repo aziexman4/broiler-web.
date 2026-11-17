@@ -5,9 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Flock;
 use App\Models\Payroll;
 use App\Models\User;
-use Carbon\Carbon;
+use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
@@ -103,68 +102,21 @@ class PayrollController extends Controller
      */
     private function calculateFlockIpAndBonus(Flock $flock, ?User $worker = null): array
     {
-        $dailyRecords = $flock->dailyRecords;
-        $harvests = $flock->harvests;
-
-        $totalMortality = (int) $dailyRecords->sum('mortality');
-        $totalCulling = (int) $dailyRecords->sum('culling');
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
-
-        // Sum physical feed columns via DB::raw as required by convention
-        $totalFeed = (float) $flock->dailyRecords()
-            ->sum(DB::raw('feed_pre_starter_kg + feed_starter_kg + feed_finisher_kg'));
-
-        $totalHarvestSold = (int) $harvests->sum('total_chickens_sold');
-        $totalHarvestWeight = (float) $harvests->sum('total_weight_kg');
-
-        $fcr = $totalHarvestWeight > 0 ? round($totalFeed / $totalHarvestWeight, 2) : 0;
-        $avgWeightKg = $totalHarvestSold > 0 ? ($totalHarvestWeight / $totalHarvestSold) : 0;
-        $livability = $flock->initial_population > 0 ? (($livePopulation / $flock->initial_population) * 100) : 0;
-
-        $startDate = Carbon::parse($flock->start_date);
-        $endDate = $flock->closed_at
-            ? Carbon::parse($flock->closed_at)
-            : ($harvests->isNotEmpty() ? Carbon::parse($harvests->max('harvest_date')) : Carbon::now());
-
-        $harvestAge = max(1, intval($startDate->diffInDays($endDate)));
-        $ip = ($fcr > 0 && $harvestAge > 0)
-            ? round(($livability * $avgWeightKg) / ($fcr * $harvestAge) * 100, 2)
-            : 0;
-
+        $metrics = FlockMetricsService::calculateForFlock($flock);
         $baseSalary = ($worker && $worker->base_salary > 0) ? (int) $worker->base_salary : 2500000;
-
-        // Tiered IP Bonus Percentage Formula:
-        // IP >= 400: 20% (Sangat Baik)
-        // IP 350 - 399.99: 15% (Baik)
-        // IP 300 - 349.99: 10% (Cukup / Standar)
-        // IP < 300: 0% (Kurang)
-        if ($ip >= 400) {
-            $bonusPercentage = 20;
-            $bonusTierLabel = 'Sangat Baik';
-        } elseif ($ip >= 350) {
-            $bonusPercentage = 15;
-            $bonusTierLabel = 'Baik';
-        } elseif ($ip >= 300) {
-            $bonusPercentage = 10;
-            $bonusTierLabel = 'Cukup / Standar';
-        } else {
-            $bonusPercentage = 0;
-            $bonusTierLabel = 'Kurang';
-        }
-
-        $recommendedBonus = (int) round($baseSalary * ($bonusPercentage / 100));
+        $bonus = FlockMetricsService::evaluateIpBonus($metrics['ip'], $baseSalary);
 
         return [
-            'total_chickens_sold' => $totalHarvestSold,
-            'total_weight_kg' => round($totalHarvestWeight, 2),
-            'total_feed_kg' => round($totalFeed, 2),
-            'harvest_age' => $harvestAge,
-            'fcr' => $fcr,
-            'ip' => $ip,
+            'total_chickens_sold' => $metrics['total_harvest_sold'],
+            'total_weight_kg' => $metrics['total_harvest_weight_kg'],
+            'total_feed_kg' => $metrics['total_feed_kg'],
+            'harvest_age' => $metrics['harvest_age'],
+            'fcr' => $metrics['fcr'],
+            'ip' => $metrics['ip'],
             'base_salary' => $baseSalary,
-            'bonus_percentage' => $bonusPercentage,
-            'bonus_tier_label' => $bonusTierLabel,
-            'recommended_bonus' => $recommendedBonus,
+            'bonus_percentage' => $bonus['bonus_percentage'],
+            'bonus_tier_label' => $bonus['bonus_tier_label'],
+            'recommended_bonus' => $bonus['recommended_bonus'],
         ];
     }
 

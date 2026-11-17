@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Flock;
 use App\Models\Harvest;
+use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -167,28 +168,19 @@ class HarvestController extends Controller
 
         $flock->load(['coop', 'dailyRecords', 'harvests']);
         $coop = $flock->coop;
-        $harvest = $flock->harvests()->latest('harvest_date')->first();
+        $harvest = $flock->harvests->sortByDesc('harvest_date')->first();
 
-        $dailyRecords = $flock->dailyRecords;
-        $totalMortality = $dailyRecords->sum('mortality');
-        $totalCulling = $dailyRecords->sum('culling');
-        $totalFeedLegacy = $dailyRecords->sum('feed_consumed_kg');
-        $totalFeedPhased = $dailyRecords->sum('feed_pre_starter_kg') + $dailyRecords->sum('feed_starter_kg') + $dailyRecords->sum('feed_finisher_kg');
-        $totalFeed = $totalFeedLegacy > 0 ? $totalFeedLegacy : $totalFeedPhased;
-        
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
-
-        $totalHarvestSold = $harvest ? $harvest->total_chickens_sold : 0;
-        $totalHarvestWeight = $harvest ? $harvest->total_weight_kg : 0;
-
-        $fcr = $totalHarvestWeight > 0 ? round($totalFeed / $totalHarvestWeight, 2) : 0;
-        $avgWeight = $totalHarvestSold > 0 ? round($totalHarvestWeight / $totalHarvestSold, 2) : 0;
-        $livability = $flock->initial_population > 0 ? round(($livePopulation / $flock->initial_population) * 100, 2) : 0;
-
-        $startDate = \Carbon\Carbon::parse($flock->start_date);
-        $harvestDate = $harvest ? \Carbon\Carbon::parse($harvest->harvest_date) : \Carbon\Carbon::now();
-        $harvestAge = max(1, intval($startDate->diffInDays($harvestDate)));
-        $ip = ($fcr > 0 && $harvestAge > 0) ? round(($livability * $avgWeight) / ($fcr * $harvestAge) * 100, 2) : 0;
+        $metrics = FlockMetricsService::calculateForFlock($flock, $flock->dailyRecords, $flock->harvests);
+        $totalMortality = $metrics['total_mortality'];
+        $totalCulling = $metrics['total_culling'];
+        $totalFeed = $metrics['total_feed_kg'];
+        $livePopulation = $metrics['live_population'];
+        $totalHarvestWeight = $metrics['total_harvest_weight_kg'];
+        $fcr = $metrics['fcr'];
+        $avgWeight = $metrics['avg_weight_kg'];
+        $livability = $metrics['livability'];
+        $harvestAge = $metrics['harvest_age'];
+        $ip = $metrics['ip'];
 
         // Financials
         $docPrice = \App\Models\SystemSetting::where('key', 'doc_price')->first()->value ?? 8000;

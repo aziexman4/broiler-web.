@@ -6,6 +6,7 @@ use App\Models\CashFlow;
 use App\Models\Coop;
 use App\Models\FeedInventory;
 use App\Models\Flock;
+use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -32,17 +33,16 @@ class ReportController extends Controller
         $dailyRecords = $flock->dailyRecords()->orderBy('record_date', 'asc')->get();
         $harvests = $flock->harvests()->orderBy('harvest_date', 'asc')->get();
 
-        $totalMortality = $dailyRecords->sum('mortality');
-        $totalCulling = $dailyRecords->sum('culling');
-        $totalFeed = $dailyRecords->sum('feed_consumed_kg');
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
-
-        $totalHarvestSold = $harvests->sum('total_chickens_sold');
-        $totalHarvestWeight = $harvests->sum('total_weight_kg');
-        $totalRevenue = $harvests->sum('revenue');
-
-        $fcr = $totalHarvestWeight > 0 ? round($totalFeed / $totalHarvestWeight, 3) : 0;
-        $avgWeightKg = $totalHarvestSold > 0 ? round($totalHarvestWeight / $totalHarvestSold, 2) : 0;
+        $metrics = FlockMetricsService::calculateForFlock($flock, $dailyRecords, $harvests);
+        $totalMortality = $metrics['total_mortality'];
+        $totalCulling = $metrics['total_culling'];
+        $totalFeed = $metrics['total_feed_kg'];
+        $livePopulation = $metrics['live_population'];
+        $totalHarvestSold = $metrics['total_harvest_sold'];
+        $totalHarvestWeight = $metrics['total_harvest_weight_kg'];
+        $totalRevenue = $metrics['total_revenue'];
+        $fcr = $metrics['fcr'];
+        $avgWeightKg = $metrics['avg_weight_kg'];
 
         $callback = function () use ($flock, $dailyRecords, $harvests, $totalMortality, $totalCulling, $totalFeed, $livePopulation, $totalHarvestSold, $totalHarvestWeight, $totalRevenue, $fcr, $avgWeightKg) {
             $file = fopen('php://output', 'w');

@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\FlockMetricsService;
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\LogsActivity;
 
 class Flock extends Model
 {
@@ -97,5 +98,13 @@ class Flock extends Model
     public function harvests(): HasMany
     {
         return $this->hasMany(Harvest::class);
+    }
+
+    /**
+     * Calculate standardized productivity metrics for this flock.
+     */
+    public function metrics(): array
+    {
+        return FlockMetricsService::calculateForFlock($this);
     }
 }

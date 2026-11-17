@@ -8,6 +8,7 @@ use App\Models\Flock;
 use App\Models\OvkInventory;
 use App\Models\Payroll;
 use App\Models\User;
+use App\Services\FlockMetricsService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -412,26 +413,10 @@ class FarmDataSeeder extends Seeder
                     $worker = $def['worker'];
                     $baseSalary = (int) $worker->base_salary;
 
-                    // Calculate actual IP & tiered bonus percentage (Phase 2 formula)
-                    $fcr = $totalWeightKg > 0 ? round($accumulatedFeed / $totalWeightKg, 2) : 0;
-                    $avgWeightKg = $chickensSold > 0 ? ($totalWeightKg / $chickensSold) : 0;
-                    $livability = $def['initial_population'] > 0 ? (($chickensSold / $def['initial_population']) * 100) : 0;
-                    $harvestAge = max(1, intval(Carbon::parse($def['start_date'])->diffInDays(Carbon::parse($def['closed_at']))));
-                    $ip = ($fcr > 0 && $harvestAge > 0)
-                        ? round(($livability * $avgWeightKg) / ($fcr * $harvestAge) * 100, 2)
-                        : 0;
-
-                    if ($ip >= 400) {
-                        $bonusPercentage = 20;
-                    } elseif ($ip >= 350) {
-                        $bonusPercentage = 15;
-                    } elseif ($ip >= 300) {
-                        $bonusPercentage = 10;
-                    } else {
-                        $bonusPercentage = 0;
-                    }
-
-                    $bonusAmount = (int) round($baseSalary * ($bonusPercentage / 100));
+                    // Calculate canonical IP & tiered bonus using shared FlockMetricsService
+                    $metrics = FlockMetricsService::calculateForFlock($flock);
+                    $bonus = FlockMetricsService::evaluateIpBonus($metrics['ip'], $baseSalary);
+                    $bonusAmount = $bonus['recommended_bonus'];
                     $totalPaid = $baseSalary + $bonusAmount;
 
                     Payroll::create([
