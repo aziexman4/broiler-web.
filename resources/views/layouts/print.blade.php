@@ -145,7 +145,8 @@
 
     <!-- A4 Paper -->
     @php
-        $activeCoop = $coop ?? \App\Models\Coop::where('is_headquarters', true)->first() ?? \App\Models\Coop::first();
+        $hqCoop = \App\Models\Coop::where('is_headquarters', true)->first();
+        $activeCoop = $coop ?? $hqCoop ?? \App\Models\Coop::first();
         $coopName = $activeCoop ? strtoupper($activeCoop->name) : 'PETERNAKAN BROILER HANAU';
         $coopTagline = $activeCoop && $activeCoop->tagline
             ? $activeCoop->tagline
@@ -155,7 +156,10 @@
             : 'Desa Pembuang Hulu I, Kec. Hanau, Kab. Seruyan, Kalimantan Tengah';
         $coopPhone = $activeCoop && $activeCoop->phone ? $activeCoop->phone : '(0538) 21088';
         $coopEmail = $activeCoop && $activeCoop->email ? $activeCoop->email : 'admin@broilerhanau.id';
-        $coopManager = $activeCoop && $activeCoop->manager_name ? $activeCoop->manager_name : 'Pemilik / Manajemen';
+
+        $ownerUser = \App\Models\User::where('role', 'owner')->first();
+        $ownerName = $ownerUser ? $ownerUser->name : 'Pemilik / Manajemen';
+        $ownerUnitLabel = $hqCoop ? $hqCoop->name . ' (Pusat)' : 'Peternakan Broiler Hanau';
     @endphp
     <div class="paper">
         <!-- Letterhead -->
@@ -177,15 +181,36 @@
         @hasSection('signature')
             @yield('signature')
         @else
-            <div class="signature-block">
-                <div class="signature-box">
-                    <div>Mengetahui,</div>
-                    <div class="font-bold" style="margin-top: 4px;">Kepala Unit / Penanggung Jawab</div>
-                    <div class="signature-space"></div>
-                    <div class="font-bold">( {{ $coopManager }} )</div>
-                    <div class="text-sm" style="color: #64748b; margin-top: 2px;">{{ $activeCoop ? $activeCoop->name : 'Peternakan Broiler Hanau' }}</div>
+            @if(!empty($leftSignerName))
+                <div class="signature-block" style="justify-content: space-between;">
+                    <div class="signature-box" style="width: 220px;">
+                        <div>{{ $leftSignerPrefix ?? 'Dibuat Oleh,' }}</div>
+                        <div class="font-bold" style="margin-top: 4px;">{{ $leftSignerRole ?? 'Pekerja Kandang' }}</div>
+                        <div class="signature-space"></div>
+                        <div class="font-bold">( {{ $leftSignerName }} )</div>
+                        @if(!empty($leftSignerUnit))
+                            <div class="text-sm" style="color: #64748b; margin-top: 2px;">{{ $leftSignerUnit }}</div>
+                        @endif
+                    </div>
+                    <div class="signature-box" style="width: 220px;">
+                        <div>{{ $rightSignerPrefix ?? 'Mengetahui,' }}</div>
+                        <div class="font-bold" style="margin-top: 4px;">{{ $rightSignerRole ?? 'Pemilik / Owner' }}</div>
+                        <div class="signature-space"></div>
+                        <div class="font-bold">( {{ $ownerName }} )</div>
+                        <div class="text-sm" style="color: #64748b; margin-top: 2px;">{{ $rightSignerUnit ?? $ownerUnitLabel }}</div>
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="signature-block">
+                    <div class="signature-box" style="width: 220px;">
+                        <div>{{ $rightSignerPrefix ?? 'Mengetahui,' }}</div>
+                        <div class="font-bold" style="margin-top: 4px;">{{ $rightSignerRole ?? 'Pemilik / Owner' }}</div>
+                        <div class="signature-space"></div>
+                        <div class="font-bold">( {{ $ownerName }} )</div>
+                        <div class="text-sm" style="color: #64748b; margin-top: 2px;">{{ $rightSignerUnit ?? ($activeCoop ? $activeCoop->name : 'Peternakan Broiler Hanau') }}</div>
+                    </div>
+                </div>
+            @endif
         @endif
 
         <div style="margin-top: 20px; text-align: center; font-size: 8px; color: #94a3b8;">

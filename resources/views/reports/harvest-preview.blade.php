@@ -1,4 +1,16 @@
-@extends('layouts.print', ['coop' => $coop ?? $flock->coop])
+@php
+    $unitCoop = $coop ?? $flock->coop;
+    $workerSigner = $flock->worker->name ?? ($unitCoop?->manager_name ?? 'Pekerja Kandang');
+@endphp
+@extends('layouts.print', [
+    'coop' => $unitCoop,
+    'leftSignerPrefix' => 'Penanggung Jawab Lapangan,',
+    'leftSignerRole' => 'Pekerja / Kepala Unit Kandang',
+    'leftSignerName' => $workerSigner,
+    'leftSignerUnit' => $unitCoop?->name ?? $flock->name,
+    'rightSignerPrefix' => 'Mengetahui & Mengesahkan,',
+    'rightSignerRole' => 'Pemilik / Owner',
+])
 
 @section('title', 'Laporan Akhir Panen & P&L — ' . $flock->name)
 

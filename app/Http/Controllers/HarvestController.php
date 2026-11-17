@@ -166,7 +166,7 @@ class HarvestController extends Controller
     {
         Gate::authorize('view', $flock);
 
-        $flock->load(['coop', 'dailyRecords', 'harvests']);
+        $flock->load(['coop', 'worker', 'dailyRecords', 'harvests']);
         $coop = $flock->coop;
         $harvest = $flock->harvests->sortByDesc('harvest_date')->first();
 

@@ -270,4 +270,69 @@ class BroilerSystemTest extends TestCase
         $this->assertSame(10, FlockMetricsService::evaluateIpBonus(320, 3000000)['bonus_percentage']);
         $this->assertSame(0, FlockMetricsService::evaluateIpBonus(280, 3000000)['bonus_percentage']);
     }
+
+    public function test_a4_reports_show_owner_and_worker_signatures_by_scope(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Pemilik Hanau']);
+        $worker = User::factory()->create(['role' => 'worker', 'name' => 'Mujawiri Apandie']);
+
+        $hqCoop = Coop::create([
+            'name' => 'Kandang Hanau',
+            'address' => 'Kec. Hanau',
+            'manager_name' => 'Muhammad Harries Rasyadi',
+            'is_headquarters' => true,
+        ]);
+
+        $branchCoop = Coop::create([
+            'name' => 'Kandang Plasma C',
+            'address' => 'Kec. Danau Sembuluh',
+            'manager_name' => 'Mujawiri Apandie',
+            'is_headquarters' => false,
+        ]);
+
+        $flock = Flock::create([
+            'coop_id' => $branchCoop->id,
+            'name' => 'Kandang Plasma C - Siklus 1',
+            'breed' => 'Hubbard',
+            'start_date' => '2026-09-01',
+            'initial_population' => 3500,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+
+        $payroll = \App\Models\Payroll::create([
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+            'base_salary' => 2700000,
+            'bonus_amount' => 270000,
+            'total_paid' => 2970000,
+            'payment_date' => '2026-10-08',
+        ]);
+
+        // Global reports -> Owner only
+        $cashFlowHtml = $this->actingAs($owner)->get(route('reports.cash-flow'));
+        $cashFlowHtml->assertOk();
+        $cashFlowHtml->assertSee('( Pemilik Hanau )');
+        $cashFlowHtml->assertDontSee('( Mujawiri Apandie )');
+
+        $auditHtml = $this->actingAs($owner)->get(route('reports.inventory-audit'));
+        $auditHtml->assertOk();
+        $auditHtml->assertSee('( Pemilik Hanau )');
+
+        // Flock & Payroll reports -> Both Worker (left) and Owner (right)
+        $dailyHtml = $this->actingAs($owner)->get(route('reports.daily-record', $flock));
+        $dailyHtml->assertOk();
+        $dailyHtml->assertSee('( Mujawiri Apandie )');
+        $dailyHtml->assertSee('( Pemilik Hanau )');
+
+        $harvestHtml = $this->actingAs($owner)->get(route('flocks.export-pdf', $flock));
+        $harvestHtml->assertOk();
+        $harvestHtml->assertSee('( Mujawiri Apandie )');
+        $harvestHtml->assertSee('( Pemilik Hanau )');
+
+        $payslipHtml = $this->actingAs($owner)->get(route('payrolls.payslip', $payroll));
+        $payslipHtml->assertOk();
+        $payslipHtml->assertSee('( Mujawiri Apandie )');
+        $payslipHtml->assertSee('( Pemilik Hanau )');
+    }
 }

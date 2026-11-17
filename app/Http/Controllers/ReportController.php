@@ -106,7 +106,7 @@ class ReportController extends Controller
     {
         Gate::authorize('view', $flock);
 
-        $flock->load('coop');
+        $flock->load(['coop', 'worker']);
         $coop = $flock->coop;
         $dailyRecords = $flock->dailyRecords()->orderBy('record_date', 'asc')->get();
 
