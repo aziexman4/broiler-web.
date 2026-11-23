@@ -3,6 +3,7 @@
 @endphp
 @extends('layouts.print', [
     'coop' => $unitCoop,
+    'pdfDownloadUrl' => route('payrolls.payslip', ['payroll' => $payroll, 'download' => 1]),
     'leftSignerPrefix' => 'Penerima,',
     'leftSignerRole' => 'Pekerja Kandang',
     'leftSignerName' => $payroll->user->name,

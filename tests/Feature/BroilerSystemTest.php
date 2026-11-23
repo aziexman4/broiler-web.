@@ -783,4 +783,189 @@ class BroilerSystemTest extends TestCase
         $this->actingAs($owner)->post(route('feed_requests.ship', $feedRequest))->assertSessionHas('error');
         $this->assertSame(1, FeedInventory::where('flock_id', $flock->id)->where('transaction_type', 'out')->count());
     }
+
+    public function test_payroll_duplicate_guard_and_daily_record_integrity_rules(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker', 'base_salary' => 2900000]);
+
+        // Assigning non-worker to flock fails validation
+        $this->actingAs($owner)->post(route('flocks.store'), [
+            'name' => 'Flock Invalid Worker',
+            'breed' => 'Cobb',
+            'start_date' => '2026-10-01',
+            'initial_population' => 1000,
+            'worker_id' => $owner->id,
+        ])->assertSessionHasErrors('worker_id');
+
+        $flock = Flock::create([
+            'name' => 'Kandang Integrity Daily',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-10-10',
+            'initial_population' => 100,
+            'stock_pre_starter_kg' => 50,
+            'status' => 'active',
+            'worker_id' => $worker->id,
+        ]);
+
+        // Date before chick-in rejected
+        $this->actingAs($worker)->postJson(route('daily_records.store', $flock), [
+            'record_date' => '2026-10-09',
+            'mortality' => 1,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 1,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertStatus(422);
+
+        // Valid record deducts stock + logs auto FeedInventory out
+        $this->actingAs($worker)->postJson(route('daily_records.store', $flock), [
+            'record_date' => '2026-10-11',
+            'mortality' => 5,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 2.5,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertOk();
+
+        // Duplicate date rejected
+        $this->actingAs($worker)->postJson(route('daily_records.store', $flock), [
+            'record_date' => '2026-10-11',
+            'mortality' => 1,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 1,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertStatus(422);
+
+        // Exceeding remaining live population rejected
+        $this->actingAs($worker)->postJson(route('daily_records.store', $flock), [
+            'record_date' => '2026-10-12',
+            'mortality' => 96,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 1,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertStatus(422);
+
+        // Deleting record reverts flock feed stock & deletes auto FeedInventory out row
+        $record = $flock->dailyRecords()->firstOrFail();
+        $this->actingAs($worker)->delete(route('daily_records.destroy', $record))->assertRedirect();
+        $flock->refresh();
+        $this->assertEquals(50.0, (float) $flock->stock_pre_starter_kg);
+        $this->assertDatabaseMissing('feed_inventories', ['flock_id' => $flock->id, 'quantity_kg' => 2.5]);
+
+        // Payroll rejects active flock, non-worker, and duplicate payroll per (flock, worker)
+        $this->actingAs($owner)->post(route('payrolls.store'), [
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+        ])->assertSessionHas('error');
+
+        $flock->update(['status' => 'closed', 'closed_at' => '2026-11-01']);
+
+        $this->actingAs($owner)->post(route('payrolls.store'), [
+            'user_id' => $owner->id,
+            'flock_id' => $flock->id,
+        ])->assertSessionHasErrors('user_id');
+
+        $this->actingAs($owner)->post(route('payrolls.store'), [
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+            'base_salary' => 2900000,
+            'bonus_amount' => 290000,
+        ])->assertSessionHas('success');
+
+        $this->actingAs($owner)->post(route('payrolls.store'), [
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+            'base_salary' => 2900000,
+            'bonus_amount' => 290000,
+        ])->assertSessionHas('error');
+
+        $this->assertSame(1, \App\Models\Payroll::where('flock_id', $flock->id)->where('user_id', $worker->id)->count());
+    }
+
+    public function test_registration_guard_ovk_feed_cash_sync_and_dompdf_downloads(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker']);
+
+        // Disabled public registration returns 403
+        config(['app.allow_public_registration' => false]);
+        $this->get('/register')->assertForbidden();
+        $this->post('/register', [
+            'name' => 'Intruder',
+            'email' => 'intruder@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertForbidden();
+
+        // OVK stock guard + CashFlow sync
+        $this->actingAs($owner)->post(route('ovk.store'), [
+            'record_date' => '2026-11-10',
+            'item_name' => 'Vitamin Uji',
+            'category' => 'obat',
+            'transaction_type' => 'out',
+            'quantity' => 3,
+            'unit' => 'botol',
+        ])->assertSessionHas('error');
+
+        $this->actingAs($owner)->post(route('ovk.store'), [
+            'record_date' => '2026-11-10',
+            'item_name' => 'Vitamin Uji',
+            'category' => 'obat',
+            'transaction_type' => 'in',
+            'quantity' => 10,
+            'unit' => 'botol',
+            'total_price' => 250000,
+            'sync_cash_flow' => '1',
+        ])->assertSessionHas('success');
+        $this->assertDatabaseHas('cash_flows', ['type' => 'out', 'amount' => 250000]);
+
+        // FeedInventory stock guard + CashFlow sync
+        $this->actingAs($owner)->post(route('feeds.store'), [
+            'transaction_date' => '2026-11-10',
+            'feed_name' => 'Pakai Berlebih',
+            'transaction_type' => 'out',
+            'quantity_kg' => 50,
+        ])->assertSessionHas('error');
+
+        $this->actingAs($owner)->post(route('feeds.store'), [
+            'transaction_date' => '2026-11-10',
+            'feed_name' => 'BR-1 Masuk',
+            'transaction_type' => 'in',
+            'quantity_kg' => 100,
+            'price_per_kg' => 9150,
+            'sync_cash_flow' => '1',
+        ])->assertSessionHas('success');
+        $this->assertDatabaseHas('cash_flows', ['type' => 'out', 'amount' => 915000]);
+
+        // Direct PDF binary download via DomPDF
+        $flock = Flock::create([
+            'name' => 'Kandang PDF',
+            'breed' => 'Cobb',
+            'start_date' => '2026-10-01',
+            'closed_at' => '2026-11-05',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+
+        $payroll = \App\Models\Payroll::create([
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+            'base_salary' => 2500000,
+            'bonus_amount' => 250000,
+            'total_paid' => 2750000,
+            'payment_date' => '2026-11-06',
+        ]);
+
+        $harvestPdf = $this->actingAs($owner)->get(route('flocks.export-pdf', ['flock' => $flock, 'download' => 1]));
+        $harvestPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $harvestPdf->getContent());
+
+        $payslipPdf = $this->actingAs($worker)->get(route('payrolls.payslip', ['payroll' => $payroll, 'download' => 1]));
+        $payslipPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $payslipPdf->getContent());
+    }
 }

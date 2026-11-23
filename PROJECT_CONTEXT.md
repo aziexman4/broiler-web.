@@ -197,5 +197,11 @@ Defined in `routes/web.php` and `routes/auth.php`.
    - `HarvestController@index` and `DashboardController` subtract flock `Payroll` totals from `harvests.net_profit` so realized net profit aligns with `HarvestController@exportPdf`.
    - `FeedRequestController@ship` locks the request inside `DB::transaction`, verifies `status === 'pending'`, and ensures central `FeedInventory` stock (`in - out`) covers `amount_kg` before shipping.
    - `SystemSettingController@updatePrice` persists `global_market_price` and optional `doc_price` / `feed_price` reference rates.
+12. **Integrity, Access & Scale Guards**:
+   - `PayrollController@store` requires `$flock->status === 'closed'`, restricts `user_id` to `role = 'worker'`, and prevents duplicate `(flock_id, user_id)` payroll entries inside `DB::transaction`. `FlockController` (`store`, `update`) likewise enforces `role = 'worker'` for `worker_id`.
+   - `DailyRecordController` (`store`, `update`, `destroy`) runs atomically inside `DB::transaction`, enforces `record_date >= flock.start_date`, rejects duplicate dates per flock and cumulative `mortality + culling > initial_population`, and reverts auto-deducted `FeedInventory` `'out'` records upon update/delete.
+   - Public self-registration (`/register`) is controlled via `config('app.allow_public_registration')` (`ALLOW_PUBLIC_REGISTRATION`, `false` by default in web/production; `true` in `phpunit.xml`).
+   - `OvkController@store` and `FeedInventoryController@store` enforce non-negative warehouse stock on `'out'` transactions and support optional automatic `CashFlow` `'out'` journaling via `sync_cash_flow`.
+   - Transaction histories (`FeedInventory`, `CashFlow`, `Ovk`, `Payroll`) paginate at 20 rows (`withQueryString()`), while `?download=1` on `flocks.export-pdf` and `payrolls.payslip` generates A4 `.pdf` files via `barryvdh/laravel-dompdf`.
 
 

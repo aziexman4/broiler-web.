@@ -45,15 +45,14 @@ class FeedInventory extends Model
     /**
      * Filter feed inventory mutations and compute stock/purchase totals for the period.
      */
-    public static function getFilteredSummary(Request $request): array
+    public static function getFilteredSummary(Request $request, ?int $perPage = null): array
     {
         $filter = self::applyPeriodFilter(static::query()->with('flock'), $request);
         $query = $filter['query'];
 
-        $records = (clone $query)
+        $orderedQuery = (clone $query)
             ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('id', 'desc');
 
         $totalIn = (float) (clone $query)->where('transaction_type', 'in')->sum('quantity_kg');
         $totalOut = (float) (clone $query)->where('transaction_type', 'out')->sum('quantity_kg');
@@ -62,12 +61,29 @@ class FeedInventory extends Model
             ->selectRaw('SUM(quantity_kg * price_per_kg) as total')
             ->value('total') ?? 0);
 
+        if ($perPage !== null) {
+            $maxDate = (clone $query)->max('transaction_date');
+            $minDate = (clone $query)->min('transaction_date');
+            $boundRecords = ($maxDate && $minDate)
+                ? new \Illuminate\Database\Eloquent\Collection([
+                    new static(['transaction_date' => $maxDate]),
+                    new static(['transaction_date' => $minDate]),
+                ])
+                : new \Illuminate\Database\Eloquent\Collection();
+
+            $records = $orderedQuery->paginate($perPage)->withQueryString();
+            $periodSource = $boundRecords;
+        } else {
+            $records = $orderedQuery->get();
+            $periodSource = $records;
+        }
+
         $periodLabel = self::buildPeriodLabel(
             $filter['activeFilterType'],
             $filter['month'],
             $filter['startDate'],
             $filter['endDate'],
-            $records
+            $periodSource
         );
 
         return [

@@ -124,14 +124,35 @@
         }
 
         @yield('extra-styles')
+
+        @if(!empty($isPdf))
+            <style>
+                body { font-family: DejaVu Sans, Helvetica, Arial, sans-serif; background: #fff; padding: 0; margin: 0; font-size: 10.5px; }
+                .paper { max-width: none; width: 100%; margin: 0; padding: 8px 10px; box-shadow: none; border-radius: 0; min-height: auto; }
+                .letterhead { display: table; width: 100%; margin-bottom: 8px; }
+                .letterhead > div { display: table-cell; vertical-align: top; }
+                .letterhead-address { text-align: right; }
+                .kpi-grid { display: table; width: 100%; table-layout: fixed; margin-bottom: 12px; }
+                .kpi-card { display: table-cell; vertical-align: top; }
+                .signature-block { display: table; width: 100%; margin-top: 30px; }
+                .signature-box { display: table-cell; width: 50%; text-align: center; vertical-align: top; }
+            </style>
+        @endif
     </style>
 </head>
 <body>
 
+    @if(empty($isPdf))
     <!-- Floating Toolbar -->
     <div class="print-toolbar no-print">
         <div class="toolbar-title">📄 Pratinjau Laporan — @yield('title', 'BroilerApp PRO')</div>
         <div class="toolbar-actions">
+            @if(!empty($pdfDownloadUrl))
+                <a class="btn-download" href="{{ $pdfDownloadUrl }}" style="background:#059669;text-decoration:none;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download PDF
+                </a>
+            @endif
             <button class="btn-download" onclick="window.print()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Unduh PDF / Cetak
@@ -142,6 +163,7 @@
             </a>
         </div>
     </div>
+    @endif
 
     <!-- A4 Paper -->
     @php
@@ -165,7 +187,7 @@
         <!-- Letterhead -->
         <div class="letterhead">
             <div>
-                <div class="letterhead-logo">🐓 {{ $coopName }}</div>
+                <div class="letterhead-logo">{{ empty($isPdf) ? '🐓 ' : '' }}{{ $coopName }}</div>
                 <div class="letterhead-subtitle">{{ $coopTagline }}</div>
             </div>
             <div class="letterhead-address">

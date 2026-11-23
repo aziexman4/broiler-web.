@@ -31,7 +31,7 @@
                 print-label="Cetak Laporan A4"
                 :active-filter-type="$activeFilterType ?? 'all'"
                 :period-label="$periodLabel ?? '-'"
-                :record-count="$records->count()"
+                :record-count="method_exists($records, 'total') ? $records->total() : $records->count()"
             />
 
             <!-- Top Section: 3 KPI Cards -->
@@ -226,6 +226,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if(method_exists($records, 'links'))
+                    <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700">
+                        {{ $records->links() }}
+                    </div>
+                @endif
             </div>
 
         </div>

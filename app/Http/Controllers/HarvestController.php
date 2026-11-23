@@ -198,9 +198,9 @@ class HarvestController extends Controller
     }
 
     /**
-     * Export Flock harvest report to printable PDF using DomPDF.
+     * Export Flock harvest report to printable HTML or downloadable PDF via DomPDF.
      */
-    public function exportPdf(Flock $flock)
+    public function exportPdf(Request $request, Flock $flock)
     {
         Gate::authorize('manage-enterprise');
         Gate::authorize('view', $flock);
@@ -238,11 +238,20 @@ class HarvestController extends Controller
         $profitMargin = $grossRevenue > 0 ? round(($trueNetProfit / $grossRevenue) * 100, 2) : 0;
         $bepPricePerKg = $totalHarvestWeight > 0 ? round($totalExpenses / $totalHarvestWeight, 2) : 0;
 
-        return view('reports.harvest-preview', compact(
-            'flock', 'coop', 'harvest', 'livePopulation', 'totalMortality', 'totalCulling', 
+        $viewData = compact(
+            'flock', 'coop', 'harvest', 'livePopulation', 'totalMortality', 'totalCulling',
             'totalFeed', 'fcr', 'avgWeight', 'livability', 'harvestAge', 'ip',
             'docPrice', 'totalDocCost', 'totalFeedCost', 'grossRevenue', 'laborCost',
             'cogs', 'totalExpenses', 'trueNetProfit', 'profitMargin', 'bepPricePerKg'
-        ));
+        );
+
+        if ($request->boolean('download')) {
+            $filename = 'laporan_panen_' . Str::slug($flock->name) . '_' . date('Y-m-d') . '.pdf';
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.harvest-preview', $viewData + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download($filename);
+        }
+
+        return view('reports.harvest-preview', $viewData);
     }
 }

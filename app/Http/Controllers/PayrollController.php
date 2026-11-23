@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PayrollController extends Controller
 {
@@ -49,7 +50,8 @@ class PayrollController extends Controller
         $payrolls = Payroll::with(['user', 'flock'])
             ->orderBy('payment_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
 
         return view('payrolls.index', compact('workers', 'closedFlocks', 'payrolls'));
     }
@@ -60,14 +62,21 @@ class PayrollController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'flock_id' => 'required|exists:flocks,id',
-            'base_salary' => 'nullable|integer|min:0',
-            'bonus_amount' => 'nullable|integer|min:0',
+            'user_id' => ['required', Rule::exists('users', 'id')->where('role', 'worker')],
+            'flock_id' => ['required', 'exists:flocks,id'],
+            'base_salary' => ['nullable', 'integer', 'min:0'],
+            'bonus_amount' => ['nullable', 'integer', 'min:0'],
+        ], [
+            'user_id.exists' => 'Pekerja tidak valid atau tidak berstatus worker.',
         ]);
 
         $worker = User::findOrFail($validated['user_id']);
         $flock = Flock::with(['harvests', 'dailyRecords'])->findOrFail($validated['flock_id']);
+
+        if ($flock->status !== 'closed') {
+            return redirect()->route('payrolls.index')
+                ->with('error', "Gaji siklus {$flock->name} belum dapat diterbitkan karena siklus masih berstatus Active (belum panen/tutup buku).");
+        }
 
         $metrics = $this->calculateFlockIpAndBonus($flock, $worker);
 
@@ -83,7 +92,20 @@ class PayrollController extends Controller
         $ip = $metrics['ip'];
         $fcr = $metrics['fcr'];
 
-        DB::transaction(function () use ($worker, $flock, $baseSalary, $bonusAmount, $totalPaid) {
+        $duplicateError = null;
+
+        DB::transaction(function () use ($worker, $flock, $baseSalary, $bonusAmount, $totalPaid, &$duplicateError) {
+            Flock::lockForUpdate()->findOrFail($flock->id);
+
+            $alreadyPaid = Payroll::where('flock_id', $flock->id)
+                ->where('user_id', $worker->id)
+                ->exists();
+
+            if ($alreadyPaid) {
+                $duplicateError = "Slip gaji untuk pekerja {$worker->name} pada siklus {$flock->name} sudah pernah diterbitkan sebelumnya.";
+                return;
+            }
+
             Payroll::create([
                 'user_id' => $worker->id,
                 'flock_id' => $flock->id,
@@ -102,6 +124,10 @@ class PayrollController extends Controller
                 ]);
             }
         });
+
+        if ($duplicateError !== null) {
+            return redirect()->route('payrolls.index')->with('error', $duplicateError);
+        }
 
         $statusMsg = $bonusAmount > 0
             ? "Gaji berhasil diterbitkan! Pekerja {$worker->name} mendapatkan bonus performa Rp " . number_format($bonusAmount, 0, ',', '.') . " (IP: {$ip}, FCR: {$fcr}, Kategori: {$metrics['bonus_tier_label']})."
@@ -150,9 +176,9 @@ class PayrollController extends Controller
     }
 
     /**
-     * Preview Payslip as printable HTML.
+     * Preview Payslip as printable HTML or download as PDF.
      */
-    public function payslipPreview(Payroll $payroll)
+    public function payslipPreview(Request $request, Payroll $payroll)
     {
         $user = auth()->user();
         abort_if(
@@ -163,6 +189,13 @@ class PayrollController extends Controller
 
         $payroll->load(['user', 'flock.coop']);
         $coop = $payroll->flock?->coop;
+
+        if ($request->boolean('download')) {
+            $slipNo = 'PAY-' . str_pad((string) $payroll->id, 5, '0', STR_PAD_LEFT);
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.payslip-preview', compact('payroll', 'coop') + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download("slip_gaji_{$slipNo}.pdf");
+        }
 
         return view('reports.payslip-preview', compact('payroll', 'coop'));
     }

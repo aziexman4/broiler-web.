@@ -123,12 +123,16 @@
                     </div>
                 </form>
 
-                <!-- Footer Register Link -->
+                <!-- Footer Access Info -->
                 <div class="mt-12 text-center text-sm text-slate-500 font-medium">
-                    Pekerja baru? 
-                    <a href="{{ route('register') }}" class="text-indigo-600 hover:text-indigo-800 font-bold ms-1 transition-colors">
-                        Minta akses ke Pemilik
-                    </a>
+                    Pekerja baru?
+                    @if(config('app.allow_public_registration'))
+                        <a href="{{ route('register') }}" class="text-indigo-600 hover:text-indigo-800 font-bold ms-1 transition-colors">
+                            Daftar Akun
+                        </a>
+                    @else
+                        <span class="text-slate-700 font-semibold ms-1">Hubungi Pemilik / Admin untuk aktivasi akun Anda.</span>
+                    @endif
                 </div>
 
             </div>

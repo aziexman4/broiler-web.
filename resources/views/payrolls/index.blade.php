@@ -49,6 +49,8 @@
     <div class="py-6" x-data="payrollFormCalculator()">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            <x-flash-alerts />
+
             <!-- Section 1: Form Terbitkan Gaji (Issue Paycheck) -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 p-6">
                 <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700 gap-3">
@@ -229,6 +231,12 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if(method_exists($payrolls, 'links'))
+                    <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700">
+                        {{ $payrolls->links() }}
+                    </div>
+                @endif
             </div>
 
         </div>

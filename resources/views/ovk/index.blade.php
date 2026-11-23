@@ -133,6 +133,14 @@
                             <textarea id="description" name="description" rows="2" placeholder="Catatan dosis / supplier..." class="w-full rounded-xl border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 shadow-md focus:border-indigo-500 focus:ring-indigo-500 text-sm">{{ old('description') }}</textarea>
                         </div>
 
+                        <label for="ovk_sync_cash_flow" class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input id="ovk_sync_cash_flow" type="checkbox" name="sync_cash_flow" value="1" {{ old('sync_cash_flow', '1') ? 'checked' : '' }} class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                <strong class="block text-slate-800 dark:text-slate-100">Catat otomatis ke Arus Kas</strong>
+                                Otomatis mengurangi saldo kas saat mencatat pembelian (Masuk) dengan total harga &gt; Rp 0.
+                            </span>
+                        </label>
+
                         <div class="pt-2">
                             <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md transition-colors">
                                 Simpan Transaksi OVK
@@ -225,6 +233,12 @@
                             </tbody>
                         </table>
                     </div>
+
+                    @if(method_exists($records, 'links'))
+                        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-700">
+                            {{ $records->links() }}
+                        </div>
+                    @endif
                 </div>
 
             </div>

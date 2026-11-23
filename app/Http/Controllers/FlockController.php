@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class FlockController extends Controller
 {
@@ -70,7 +71,7 @@ class FlockController extends Controller
             'breed' => 'required|string|max:255',
             'start_date' => 'required|date',
             'initial_population' => 'required|integer|min:1',
-            'worker_id' => 'nullable|exists:users,id',
+            'worker_id' => ['nullable', Rule::exists('users', 'id')->where('role', 'worker')],
         ]);
 
         $validated['status'] = 'active';
@@ -203,7 +204,7 @@ class FlockController extends Controller
             'breed' => 'required|string|max:255',
             'start_date' => 'required|date',
             'initial_population' => 'required|integer|min:1',
-            'worker_id' => 'nullable|exists:users,id',
+            'worker_id' => ['nullable', Rule::exists('users', 'id')->where('role', 'worker')],
         ]);
 
         $flock->update($validated);

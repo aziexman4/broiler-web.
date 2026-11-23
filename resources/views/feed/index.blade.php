@@ -27,7 +27,7 @@
                 print-label="Cetak Audit Gudang A4"
                 :active-filter-type="$activeFilterType ?? 'all'"
                 :period-label="$periodLabel ?? '-'"
-                :record-count="$inventories->count()"
+                :record-count="method_exists($inventories, 'total') ? $inventories->total() : $inventories->count()"
             />
 
             <!-- Top KPI Summary Cards -->
@@ -181,6 +181,14 @@
                             <x-input-error :messages="$errors->get('notes')" class="mt-1" />
                         </div>
 
+                        <label for="feed_sync_cash_flow" class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 cursor-pointer">
+                            <input id="feed_sync_cash_flow" type="checkbox" name="sync_cash_flow" value="1" {{ old('sync_cash_flow', '1') ? 'checked' : '' }} class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                <strong class="block text-slate-800 dark:text-slate-100">Catat otomatis ke Arus Kas</strong>
+                                Otomatis mencatat kas keluar (Kg &times; Harga/Kg) untuk transaksi Pakan Masuk (In).
+                            </span>
+                        </label>
+
                         <div class="pt-2">
                             <button type="submit" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow transition">
                                 Simpan Mutasi Pakan
@@ -194,7 +202,7 @@
                     <h3 class="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 pb-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 flex-wrap">
                         <span>📋 Riwayat Mutasi Gudang Pakan</span>
                         <span class="text-xs font-normal text-slate-500 dark:text-slate-400">
-                            Periode: <strong class="text-slate-700 dark:text-slate-200">{{ $periodLabel ?? '-' }}</strong> ({{ $inventories->count() }} transaksi)
+                            Periode: <strong class="text-slate-700 dark:text-slate-200">{{ $periodLabel ?? '-' }}</strong> ({{ method_exists($inventories, 'total') ? $inventories->total() : $inventories->count() }} transaksi)
                         </span>
                     </h3>
 
@@ -264,6 +272,12 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        @if(method_exists($inventories, 'links'))
+                            <div class="mt-4">
+                                {{ $inventories->links() }}
+                            </div>
+                        @endif
                     @endif
                 </div>
 

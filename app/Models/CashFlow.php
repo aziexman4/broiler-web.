@@ -46,26 +46,42 @@ class CashFlow extends Model
     /**
      * Filter cash flow records and compute totals from mutually exclusive period filters.
      */
-    public static function getFilteredSummary(Request $request): array
+    public static function getFilteredSummary(Request $request, ?int $perPage = null): array
     {
         $filter = self::applyPeriodFilter(static::query(), $request);
         $query = $filter['query'];
 
-        $records = (clone $query)
+        $orderedQuery = (clone $query)
             ->orderBy('transaction_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('id', 'desc');
 
         $totalIn = (int) (clone $query)->where('type', 'in')->sum('amount');
         $totalOut = (int) (clone $query)->where('type', 'out')->sum('amount');
         $balance = $totalIn - $totalOut;
+
+        if ($perPage !== null) {
+            $maxDate = (clone $query)->max('transaction_date');
+            $minDate = (clone $query)->min('transaction_date');
+            $boundRecords = ($maxDate && $minDate)
+                ? new \Illuminate\Database\Eloquent\Collection([
+                    new static(['transaction_date' => $maxDate]),
+                    new static(['transaction_date' => $minDate]),
+                ])
+                : new \Illuminate\Database\Eloquent\Collection();
+
+            $records = $orderedQuery->paginate($perPage)->withQueryString();
+            $periodSource = $boundRecords;
+        } else {
+            $records = $orderedQuery->get();
+            $periodSource = $records;
+        }
 
         $periodLabel = self::buildPeriodLabel(
             $filter['activeFilterType'],
             $filter['month'],
             $filter['startDate'],
             $filter['endDate'],
-            $records
+            $periodSource
         );
 
         return [

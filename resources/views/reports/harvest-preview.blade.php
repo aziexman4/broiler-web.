@@ -4,6 +4,7 @@
 @endphp
 @extends('layouts.print', [
     'coop' => $unitCoop,
+    'pdfDownloadUrl' => route('flocks.export-pdf', ['flock' => $flock, 'download' => 1]),
     'leftSignerPrefix' => 'Penanggung Jawab Lapangan,',
     'leftSignerRole' => 'Pekerja / Kepala Unit Kandang',
     'leftSignerName' => $workerSigner,

@@ -12,7 +12,7 @@ class CashFlowController extends Controller
      */
     public function index(Request $request)
     {
-        $summary = CashFlow::getFilteredSummary($request);
+        $summary = CashFlow::getFilteredSummary($request, 20);
 
         return view('cash_flows.index', [
             'records' => $summary['records'],
