@@ -32,6 +32,28 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            @if (session('success'))
+                <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 flex items-center justify-between shadow-md">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm font-medium">{{ session('success') }}</span>
+                    </div>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 flex items-center justify-between shadow-md">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm font-medium">{{ session('error') }}</span>
+                    </div>
+                </div>
+            @endif
+
             @if(Auth::user()->isOwner())
             <!-- Global Market Price Widget -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between mb-6 gap-4 transition-all hover:shadow-lg">
@@ -167,9 +189,20 @@
                                                 </span>
                                             </td>
                                             <td class="py-3 px-4 text-right">
-                                                <a href="{{ route('flocks.show', $flock) }}" class="inline-flex items-center px-3 py-1 bg-gray-800 dark:bg-slate-700 text-white rounded text-xs font-medium hover:bg-gray-700 dark:hover:bg-slate-600">
-                                                    Lihat Detail &rarr;
-                                                </a>
+                                                <div class="inline-flex items-center gap-2">
+                                                    <a href="{{ route('flocks.show', $flock) }}" class="inline-flex items-center px-3 py-1 bg-gray-800 dark:bg-slate-700 text-white rounded text-xs font-medium hover:bg-gray-700 dark:hover:bg-slate-600">
+                                                        Lihat Detail &rarr;
+                                                    </a>
+                                                    @can('manage-enterprise')
+                                                        <form action="{{ route('flocks.destroy', $flock) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus siklus kandang ini?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="inline-flex items-center px-2.5 py-1 bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/70 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded border border-rose-200 dark:border-rose-800 transition-colors">
+                                                                Hapus
+                                                            </button>
+                                                        </form>
+                                                    @endcan
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -80,6 +81,21 @@ class User extends Authenticatable
     public function flocks(): HasMany
     {
         return $this->hasMany(Flock::class, 'worker_id');
+    }
+
+    /**
+     * Get all daily records recorded on flocks assigned to this worker.
+     */
+    public function dailyRecords(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            DailyRecord::class,
+            Flock::class,
+            'worker_id',
+            'flock_id',
+            'id',
+            'id'
+        );
     }
 
     /**

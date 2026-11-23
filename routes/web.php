@@ -3,6 +3,7 @@
 use App\Http\Controllers\CashFlowController;
 use App\Http\Controllers\CoopController;
 use App\Http\Controllers\DailyRecordController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FeedInventoryController;
 use App\Http\Controllers\FlockController;
 use App\Http\Controllers\HarvestController;
@@ -19,10 +20,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Otomatis arahkan Dashboard ke Daftar Kandang
-Route::get('/dashboard', function () {
-    return redirect()->route('flocks.index');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Dashboard Berbasis Peran (Owner: Eksekutif & Finansial, Worker: Operasional & Slip Gaji)
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 // Semua rute di dalam sini dilindungi oleh sistem Login
 Route::middleware('auth')->group(function () {

@@ -83,6 +83,16 @@ class CoopController extends Controller
      */
     public function destroy(Coop $coop)
     {
+        if ($coop->is_headquarters === true) {
+            return redirect()->route('coops.index')
+                ->with('error', "Unit lokasi {$coop->name} berstatus Kantor Pusat (HQ) dan tidak dapat dihapus.");
+        }
+
+        if ($coop->flocks()->exists()) {
+            return redirect()->route('coops.index')
+                ->with('error', "Unit lokasi {$coop->name} tidak dapat dihapus karena masih memiliki relasi siklus kandang.");
+        }
+
         $name = $coop->name;
         $coop->delete();
 

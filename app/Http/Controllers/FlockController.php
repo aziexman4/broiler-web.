@@ -210,8 +210,19 @@ class FlockController extends Controller
     {
         Gate::authorize('delete', $flock);
 
+        if ($flock->status === 'closed') {
+            return redirect()->route('flocks.index')
+                ->with('error', "Siklus {$flock->name} sudah berstatus Tutup Buku (Closed) dan tidak dapat dihapus.");
+        }
+
+        if ($flock->harvests()->exists() || $flock->payrolls()->exists()) {
+            return redirect()->route('flocks.index')
+                ->with('error', "Siklus {$flock->name} tidak dapat dihapus karena sudah memiliki data panen atau penggajian.");
+        }
+
+        $name = $flock->name;
         $flock->delete();
 
-        return redirect()->route('flocks.index')->with('success', 'Kandang berhasil dihapus!');
+        return redirect()->route('flocks.index')->with('success', "Kandang {$name} berhasil dihapus!");
     }
 }

@@ -503,4 +503,168 @@ class BroilerSystemTest extends TestCase
         $this->actingAs($owner)->post(route('feed_requests.ship', $pendingRequest))->assertForbidden();
         $this->actingAs($worker)->post(route('feed_requests.receive', $shippedRequest))->assertForbidden();
     }
+
+    public function test_safe_delete_guards_on_coops_workers_and_flocks(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $workerWithPayroll = User::factory()->create(['role' => 'worker', 'name' => 'Pekerja Payroll']);
+        $workerWithRecord = User::factory()->create(['role' => 'worker', 'name' => 'Pekerja Record']);
+        $cleanWorker = User::factory()->create(['role' => 'worker', 'name' => 'Pekerja Bersih']);
+
+        $hqCoop = Coop::create([
+            'name' => 'Kandang Pusat',
+            'address' => 'Pusat',
+            'manager_name' => 'Owner',
+            'is_headquarters' => true,
+        ]);
+
+        $branchWithFlock = Coop::create([
+            'name' => 'Kandang Cabang Isi',
+            'address' => 'Cabang',
+            'manager_name' => 'Staff',
+            'is_headquarters' => false,
+        ]);
+
+        $cleanCoop = Coop::create([
+            'name' => 'Kandang Cabang Kosong',
+            'address' => 'Cabang 2',
+            'manager_name' => 'Staff 2',
+            'is_headquarters' => false,
+        ]);
+
+        $closedFlock = Flock::create([
+            'coop_id' => $branchWithFlock->id,
+            'name' => 'Siklus Closed',
+            'breed' => 'Cobb',
+            'start_date' => '2026-09-01',
+            'closed_at' => '2026-10-01',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $workerWithPayroll->id,
+        ]);
+
+        \App\Models\Payroll::create([
+            'user_id' => $workerWithPayroll->id,
+            'flock_id' => $closedFlock->id,
+            'base_salary' => 2500000,
+            'bonus_amount' => 250000,
+            'total_paid' => 2750000,
+            'payment_date' => '2026-10-05',
+        ]);
+
+        $activeRecordedFlock = Flock::create([
+            'coop_id' => $branchWithFlock->id,
+            'name' => 'Siklus Berisi Record',
+            'breed' => 'Ross',
+            'start_date' => '2026-10-15',
+            'initial_population' => 1000,
+            'status' => 'active',
+            'worker_id' => $workerWithRecord->id,
+        ]);
+
+        $activeRecordedFlock->dailyRecords()->create([
+            'record_date' => '2026-10-16',
+            'mortality' => 1,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 15,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ]);
+
+        $cleanActiveFlock = Flock::create([
+            'name' => 'Siklus Baru Kosong',
+            'breed' => 'Cobb',
+            'start_date' => '2026-10-20',
+            'initial_population' => 500,
+            'status' => 'active',
+        ]);
+
+        // CoopController@destroy
+        $this->actingAs($owner)->delete(route('coops.destroy', $hqCoop))->assertSessionHas('error');
+        $this->assertDatabaseHas('coops', ['id' => $hqCoop->id]);
+
+        $this->actingAs($owner)->delete(route('coops.destroy', $branchWithFlock))->assertSessionHas('error');
+        $this->assertDatabaseHas('coops', ['id' => $branchWithFlock->id]);
+
+        $this->actingAs($owner)->delete(route('coops.destroy', $cleanCoop))->assertSessionHas('success');
+        $this->assertDatabaseMissing('coops', ['id' => $cleanCoop->id]);
+
+        // WorkerController@destroy
+        $this->actingAs($owner)->delete(route('workers.destroy', $workerWithPayroll))->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $workerWithPayroll->id]);
+
+        $this->actingAs($owner)->delete(route('workers.destroy', $workerWithRecord))->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $workerWithRecord->id]);
+
+        $this->actingAs($owner)->delete(route('workers.destroy', $cleanWorker))->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $cleanWorker->id]);
+
+        // FlockController@destroy
+        $this->actingAs($owner)->delete(route('flocks.destroy', $closedFlock))->assertSessionHas('error');
+        $this->assertDatabaseHas('flocks', ['id' => $closedFlock->id]);
+
+        $this->actingAs($owner)->delete(route('flocks.destroy', $cleanActiveFlock))->assertSessionHas('success');
+        $this->assertDatabaseMissing('flocks', ['id' => $cleanActiveFlock->id]);
+    }
+
+    public function test_dashboard_separates_owner_financials_from_worker_operations(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Owner Dashboard']);
+        $worker = User::factory()->create(['role' => 'worker', 'name' => 'Worker Dashboard']);
+
+        CashFlow::create([
+            'transaction_date' => '2026-10-01',
+            'description' => 'Modal Kas Awal',
+            'type' => 'in',
+            'amount' => 50000000,
+        ]);
+
+        $activeFlock = Flock::create([
+            'name' => 'Kandang Aktif Worker',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-10-10',
+            'initial_population' => 1000,
+            'status' => 'active',
+            'worker_id' => $worker->id,
+        ]);
+
+        $closedFlock = Flock::create([
+            'name' => 'Kandang Panen Worker',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-08-01',
+            'closed_at' => '2026-09-05',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+
+        \App\Models\Payroll::create([
+            'user_id' => $worker->id,
+            'flock_id' => $closedFlock->id,
+            'base_salary' => 2800000,
+            'bonus_amount' => 420000,
+            'total_paid' => 3220000,
+            'payment_date' => '2026-09-10',
+        ]);
+
+        // Owner dashboard sees all financial KPIs
+        $ownerDash = $this->actingAs($owner)->get(route('dashboard'));
+        $ownerDash->assertOk();
+        $ownerDash->assertSee('Total Saldo Kas');
+        $ownerDash->assertSee('Estimasi Pendapatan');
+        $ownerDash->assertSee('Laba Bersih Panen');
+        $ownerDash->assertSee('50.000.000');
+
+        // Worker dashboard hides enterprise financials and shows operational active flocks + personal latest payroll
+        $workerDash = $this->actingAs($worker)->get(route('dashboard'));
+        $workerDash->assertOk();
+        $workerDash->assertDontSee('Total Saldo Kas');
+        $workerDash->assertDontSee('Estimasi Pendapatan');
+        $workerDash->assertDontSee('Laba Bersih Panen');
+        $workerDash->assertDontSee('50.000.000');
+        $workerDash->assertSee('Kandang Aktif Worker');
+        $workerDash->assertSee('Input Recording Harian');
+        $workerDash->assertSee('Gaji &amp; Bonus Terakhir', false);
+        $workerDash->assertSee('3.220.000');
+    }
 }

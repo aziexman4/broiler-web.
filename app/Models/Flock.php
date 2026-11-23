@@ -93,6 +93,14 @@ class Flock extends Model
     }
 
     /**
+     * Get all payrolls linked to this flock cycle.
+     */
+    public function payrolls(): HasMany
+    {
+        return $this->hasMany(Payroll::class);
+    }
+
+    /**
      * Calculate standardized productivity metrics for this flock.
      */
     public function metrics(): array

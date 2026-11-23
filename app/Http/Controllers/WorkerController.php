@@ -118,8 +118,19 @@ class WorkerController extends Controller
             return redirect()->route('workers.index')->with('error', 'Hanya akun dengan role worker yang dapat dihapus.');
         }
 
+        if ($worker->payrolls()->exists()) {
+            return redirect()->route('workers.index')
+                ->with('error', "Akun pekerja {$worker->name} tidak dapat dihapus karena sudah memiliki riwayat penggajian (payroll).");
+        }
+
+        if ($worker->dailyRecords()->exists()) {
+            return redirect()->route('workers.index')
+                ->with('error', "Akun pekerja {$worker->name} tidak dapat dihapus karena sudah memiliki riwayat recording harian kandang.");
+        }
+
+        $name = $worker->name;
         $worker->delete();
 
-        return redirect()->route('workers.index')->with('success', 'Akun pekerja berhasil diberhentikan dan dihapus.');
+        return redirect()->route('workers.index')->with('success', "Akun pekerja {$name} berhasil diberhentikan dan dihapus.");
     }
 }

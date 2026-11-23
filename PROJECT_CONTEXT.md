@@ -69,7 +69,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 
 | HTTP & URI | Route Name | Controller@Method | Access Control Binding |
 | :--- | :--- | :--- | :--- |
-| `GET /dashboard` | `dashboard` | Closure (redirects to `flocks.index`) | `auth`, `verified` |
+| `GET /dashboard` | `dashboard` | `DashboardController@index` | `auth`, `verified` (Owner: financial KPIs via `@can('manage-enterprise')`; Worker: operational active flocks & personal latest payroll via `@cannot('manage-enterprise')`) |
 | `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` | `auth` only *(no role check)* |
 | `GET/PATCH/DELETE /profile` | `profile.{edit,update,destroy}` | `ProfileController` | `auth` |
 | `RESOURCE /flocks` | `flocks.*` | `FlockController` | `FlockPolicy` (`create`/`delete`: owner; `view`/`update`: owner or assigned worker) |
@@ -123,6 +123,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 
 | Controller | Action | View Rendered | Variables Passed (`compact` / `view`) |
 | :--- | :--- | :--- | :--- |
+| `DashboardController` | `index` | `dashboard` | `financialMetrics` (Owner only, `null` for Worker), `activeFlockSummaries`, `latestPayroll` (Worker only), `workerStats` (Worker only) |
 | `CoopController` | `index` | `coops.index` | `coops` (with `flocks_count`) |
 | `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `coops`, `globalMarketPrice` |
 | `FlockController` | `create` | `flocks.create` | `workers`, `coops` |
