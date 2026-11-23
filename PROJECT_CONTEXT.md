@@ -72,8 +72,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `GET /dashboard` | `dashboard` | `DashboardController@index` | `auth`, `verified` (Owner: financial KPIs via `@can('manage-enterprise')`; Worker: operational active flocks & personal latest payroll via `@cannot('manage-enterprise')`) |
 | `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` | `auth` only *(no role check)* |
 | `GET/PATCH/DELETE /profile` | `profile.{edit,update,destroy}` | `ProfileController` | `auth` |
-| `RESOURCE /flocks` | `flocks.*` | `FlockController` | `FlockPolicy` (`create`/`delete`: owner; `view`/`update`: owner or assigned worker) |
-| `GET /flocks/{flock}/export-csv` | `flocks.export-csv` | `ReportController@exportCsv` | `FlockPolicy@view` |
+| `RESOURCE /flocks` | `flocks.*` | `FlockController` | `FlockPolicy` (`create`/`delete`: owner; `edit`/`update`: owner + active status guard; `view`: owner or assigned worker) |
 | `GET /flocks/{flock}/report/daily-record` | `reports.daily-record` | `ReportController@dailyRecordPreview` | `FlockPolicy@view` |
 | `GET /my-payslips` | `worker.payslips.index` | `PayrollController@workerIndex` | `auth` (filters strictly by `user_id === auth()->id()`) |
 | `GET /payrolls/{payroll}/payslip` | `payrolls.payslip` | `PayrollController@payslipPreview` | `auth` + Ownership guard (`owner` OR `payroll->user_id === auth()->id()`) |
@@ -81,11 +80,8 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `POST /flocks/{flock}/daily-records` | `daily_records.store` | `DailyRecordController@store` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
 | `PUT /daily-records/{dailyRecord}` | `daily_records.update` | `DailyRecordController@update` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
 | `DELETE /daily-records/{dailyRecord}` | `daily_records.destroy` | `DailyRecordController@destroy` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
-| `GET /flocks/{flock}/harvests/create` | `harvests.create` | `HarvestController@create` | `FlockPolicy@update` |
-| `POST /flocks/{flock}/harvests` | `harvests.store` | `HarvestController@store` | `FlockPolicy@update` |
-| `POST /flocks/{flock}/harvests/auto` | `harvests.auto` | `HarvestController@autoStore` | `FlockPolicy@update` |
 | `POST /flocks/{flock}/feed-requests` | `feed_requests.store` | `FeedRequestController@store` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
-| `POST /feed-requests/{feedRequest}/ship` | `feed_requests.ship` | `FeedRequestController@ship` | Inline `isOwner()` check + `active` status guard (`403` when `closed`) |
+| `POST /feed-requests/{feedRequest}/ship` | `feed_requests.ship` | `FeedRequestController@ship` | Inline `isOwner()` + `pending` + stock check + `active` status guard |
 | `POST /feed-requests/{feedRequest}/receive` | `feed_requests.receive` | `FeedRequestController@receive` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
 | `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` | `auth`, `can:manage-enterprise` |
 | `GET /reports/inventory-audit` | `reports.inventory-audit` | `ReportController@inventoryAuditPreview` | `auth`, `can:manage-enterprise` |
@@ -94,7 +90,11 @@ Defined in `routes/web.php` and `routes/auth.php`.
 
 | HTTP & URI | Route Name | Controller@Method |
 | :--- | :--- | :--- |
+| `GET /flocks/{flock}/export-csv` | `flocks.export-csv` | `ReportController@exportCsv` |
 | `GET /flocks/{flock}/export-pdf` | `flocks.export-pdf` | `HarvestController@exportPdf` |
+| `GET /flocks/{flock}/harvests/create` | `harvests.create` | `HarvestController@create` |
+| `POST /flocks/{flock}/harvests` | `harvests.store` | `HarvestController@store` |
+| `POST /flocks/{flock}/harvests/auto` | `harvests.auto` | `HarvestController@autoStore` |
 | `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` |
 | `RESOURCE /feeds` (`only: index,store`) & `GET /feed` | `feeds.{index,store}`, `feed.index` | `FeedInventoryController` |
 | `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` |
@@ -125,12 +125,12 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | :--- | :--- | :--- | :--- |
 | `DashboardController` | `index` | `dashboard` | `financialMetrics` (Owner only, `null` for Worker), `activeFlockSummaries`, `latestPayroll` (Worker only), `workerStats` (Worker only) |
 | `CoopController` | `index` | `coops.index` | `coops` (with `flocks_count`) |
-| `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `coops`, `globalMarketPrice` |
+| `FlockController` | `index` | `flocks.index` | `flocks` (with `worker`, `coop`), `workers`, `coops`, `globalMarketPrice`, `docPrice`, `feedPrice` |
 | `FlockController` | `create` | `flocks.create` | `workers`, `coops` |
 | `FlockController` | `show` | `flocks.show` | `flock`, `dailyRecords`, `harvests`, `totalMortality`, `totalCulling`, `livePopulation`, `totalFeedConsumed`, `totalHarvestSold`, `totalHarvestWeight`, `totalRevenue`, `fcr`, `ip`, `livability`, `avgWeightKg`, `harvestAge`, `chartDates`, `chartMortality`, `chartFeed`, `latestHarvest`, `bepChartData`, `totalCost`, `estimatedRevenue`, `netProfit`, `feedRequests` |
 | `FlockController` | `edit` | `flocks.edit` | `flock`, `workers`, `coops` |
 | `DailyRecordController` | `create` | `daily_records.create` | `flock` |
-| `HarvestController` | `index` | `harvests.history` | `harvests`, `total_net_profit`, `total_revenue`, `total_weight`, `chartLabels`, `chartData` |
+| `HarvestController` | `index` | `harvests.history` | `harvests` (enriched with `labor_cost`, `true_net_profit`), `total_net_profit`, `total_operating_profit`, `total_labor_cost`, `total_revenue`, `total_weight`, `chartLabels`, `chartData` |
 | `HarvestController` | `create` | `harvests.create` | `flock`, `livePopulation` |
 | `HarvestController` | `exportPdf` | `reports.harvest-preview` | `flock`, `coop`, `harvest`, `livePopulation`, `totalMortality`, `totalCulling`, `totalFeed`, `fcr`, `avgWeight`, `livability`, `harvestAge`, `ip`, `docPrice`, `totalDocCost`, `totalFeedCost`, `grossRevenue`, `laborCost`, `cogs`, `totalExpenses`, `trueNetProfit`, `profitMargin`, `bepPricePerKg` |
 | `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `activeFilterType`, `periodLabel`, `flocks` |
@@ -192,5 +192,10 @@ Defined in `routes/web.php` and `routes/auth.php`.
 10. **Unified Flock Metrics Service (`App\Services\FlockMetricsService`)**:
    - `FlockMetricsService::calculateForFlock()` is the single source of truth for `total_mortality`, `total_culling`, `live_population`, `total_feed_kg`, `fcr` (`round 3`), `livability` (`round 2`), `avg_weight_kg` (`round 2`), `harvest_age`, and `ip` (`round 2`) across `FlockController`, `HarvestController`, `PayrollController`, `AnalyticsController`, `WorkerController`, `ReportController`, and `FarmDataSeeder`.
    - `FlockMetricsService::evaluateIpBonus()` centralizes the Phase 2 tiered IP bonus formula (`>= 400: 20%`, `350–399: 15%`, `300–349: 10%`, `< 300: 0%`).
+11. **Financial Sync, Reference Prices & Safe Logistics**:
+   - `HarvestController` (`store`, `autoStore`) and `PayrollController@store` wrap mutations in `DB::transaction` and post corresponding `CashFlow` entries (`'in'` on gross harvest revenue, `'out'` on payroll payment).
+   - `HarvestController@index` and `DashboardController` subtract flock `Payroll` totals from `harvests.net_profit` so realized net profit aligns with `HarvestController@exportPdf`.
+   - `FeedRequestController@ship` locks the request inside `DB::transaction`, verifies `status === 'pending'`, and ensures central `FeedInventory` stock (`in - out`) covers `amount_kg` before shipping.
+   - `SystemSettingController@updatePrice` persists `global_market_price` and optional `doc_price` / `feed_price` reference rates.
 
 

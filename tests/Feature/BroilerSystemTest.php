@@ -40,9 +40,11 @@ class BroilerSystemTest extends TestCase
             'worker_id' => $workerA->id,
         ]);
 
-        // Assigned worker can view daily record report & CSV export
+        // Assigned worker can view daily record report, while financial CSV export is Owner-only
+        $owner = User::factory()->create(['role' => 'owner']);
         $this->actingAs($workerA)->get(route('reports.daily-record', $flockA))->assertOk();
-        $this->actingAs($workerA)->get(route('flocks.export-csv', $flockA))->assertOk();
+        $this->actingAs($workerA)->get(route('flocks.export-csv', $flockA))->assertForbidden();
+        $this->actingAs($owner)->get(route('flocks.export-csv', $flockA))->assertOk();
 
         // Unassigned worker is forbidden by FlockPolicy
         $this->actingAs($workerB)->get(route('reports.daily-record', $flockA))->assertForbidden();
@@ -666,5 +668,119 @@ class BroilerSystemTest extends TestCase
         $workerDash->assertSee('Input Recording Harian');
         $workerDash->assertSee('Gaji &amp; Bonus Terakhir', false);
         $workerDash->assertSee('3.220.000');
+    }
+
+    public function test_harvest_and_payroll_sync_cash_flow_and_enforce_owner_guards(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker', 'base_salary' => 3000000]);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Panen & CashFlow',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-10-01',
+            'initial_population' => 1000,
+            'status' => 'active',
+            'worker_id' => $worker->id,
+        ]);
+
+        // Worker cannot access flock edit/update or harvest routes
+        $this->actingAs($worker)->get(route('flocks.edit', $flock))->assertForbidden();
+        $this->actingAs($worker)->put(route('flocks.update', $flock), [
+            'name' => 'Ubah Ilegal',
+            'breed' => 'Ross',
+            'start_date' => '2026-10-01',
+            'initial_population' => 900,
+        ])->assertForbidden();
+        $this->actingAs($worker)->get(route('harvests.create', $flock))->assertForbidden();
+        $this->actingAs($worker)->post(route('harvests.auto', $flock))->assertForbidden();
+
+        // Owner updates DOC & feed prices + global market price
+        $this->actingAs($owner)->post(route('settings.updatePrice'), [
+            'global_market_price' => 24000,
+            'doc_price' => 8500,
+            'feed_price' => 9200,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('system_settings', ['key' => 'global_market_price', 'value' => '24000']);
+        $this->assertDatabaseHas('system_settings', ['key' => 'doc_price', 'value' => '8500']);
+        $this->assertDatabaseHas('system_settings', ['key' => 'feed_price', 'value' => '9200']);
+
+        // Owner records harvest -> closes flock + creates CashFlow IN automatically
+        $this->actingAs($owner)->post(route('harvests.store', $flock), [
+            'harvest_date' => '2026-11-05',
+            'total_weight_kg' => 2000,
+            'chicken_price_per_kg' => 24000,
+            'feed_price_per_kg' => 9200,
+            'buyer_name' => 'PT Mitra Broiler',
+        ])->assertRedirect(route('flocks.show', $flock));
+
+        $flock->refresh();
+        $this->assertSame('closed', $flock->status);
+        $this->assertDatabaseHas('cash_flows', [
+            'type' => 'in',
+            'amount' => 48000000,
+        ]);
+
+        // Closed flock cannot be edited or re-harvested even by Owner
+        $this->actingAs($owner)->get(route('flocks.edit', $flock))->assertForbidden();
+        $this->actingAs($owner)->get(route('harvests.create', $flock))->assertForbidden();
+        $this->actingAs($owner)->post(route('harvests.auto', $flock))->assertForbidden();
+
+        // Owner issues payroll -> creates CashFlow OUT automatically
+        $this->actingAs($owner)->post(route('payrolls.store'), [
+            'user_id' => $worker->id,
+            'flock_id' => $flock->id,
+            'base_salary' => 3000000,
+            'bonus_amount' => 300000,
+        ])->assertRedirect(route('payrolls.index'));
+
+        $this->assertDatabaseHas('cash_flows', [
+            'type' => 'out',
+            'amount' => 3300000,
+        ]);
+    }
+
+    public function test_feed_request_ship_validates_central_stock_and_pending_status(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker']);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Cek Stok Gudang',
+            'breed' => 'Cobb',
+            'start_date' => '2026-11-01',
+            'initial_population' => 1000,
+            'status' => 'active',
+            'worker_id' => $worker->id,
+        ]);
+
+        $feedRequest = $flock->feedRequests()->create([
+            'feed_type' => 'Starter',
+            'amount_kg' => 200,
+            'status' => 'pending',
+        ]);
+
+        // Shipping without central stock must fail with session error and remain pending
+        $this->actingAs($owner)->post(route('feed_requests.ship', $feedRequest))->assertSessionHas('error');
+        $feedRequest->refresh();
+        $this->assertSame('pending', $feedRequest->status);
+
+        // Add sufficient central stock, then ship succeeds once and duplicate ship is blocked
+        FeedInventory::create([
+            'transaction_date' => '2026-11-01',
+            'feed_name' => 'Starter Gudang',
+            'transaction_type' => 'in',
+            'quantity_kg' => 500,
+            'price_per_kg' => 9000,
+        ]);
+
+        $this->actingAs($owner)->post(route('feed_requests.ship', $feedRequest))->assertSessionHas('success');
+        $feedRequest->refresh();
+        $this->assertSame('shipped', $feedRequest->status);
+
+        // Second ship attempt must fail with error (not double-deduct)
+        $this->actingAs($owner)->post(route('feed_requests.ship', $feedRequest))->assertSessionHas('error');
+        $this->assertSame(1, FeedInventory::where('flock_id', $flock->id)->where('transaction_type', 'out')->count());
     }
 }

@@ -70,7 +70,10 @@ class DashboardController extends Controller
             });
 
             $estimatedActiveNetProfit = $estimatedActiveRevenue - $estimatedActiveCost;
-            $realizedNetProfit = (float) Harvest::sum('net_profit');
+            $realizedOperatingProfit = (float) Harvest::sum('net_profit');
+            $harvestedFlockIds = Harvest::distinct()->pluck('flock_id');
+            $realizedLaborCost = (float) Payroll::whereIn('flock_id', $harvestedFlockIds)->sum('total_paid');
+            $realizedNetProfit = $realizedOperatingProfit - $realizedLaborCost;
             $realizedRevenue = (float) Harvest::sum('gross_revenue');
             $closedFlocksCount = Flock::where('status', 'closed')->count();
             $pendingFeedRequestsCount = FeedRequest::where('status', 'pending')->count();

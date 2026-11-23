@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashFlow;
 use App\Models\Flock;
 use App\Models\Payroll;
 use App\Models\User;
 use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
@@ -81,14 +83,25 @@ class PayrollController extends Controller
         $ip = $metrics['ip'];
         $fcr = $metrics['fcr'];
 
-        Payroll::create([
-            'user_id' => $worker->id,
-            'flock_id' => $flock->id,
-            'base_salary' => $baseSalary,
-            'bonus_amount' => $bonusAmount,
-            'total_paid' => $totalPaid,
-            'payment_date' => now()->toDateString(),
-        ]);
+        DB::transaction(function () use ($worker, $flock, $baseSalary, $bonusAmount, $totalPaid) {
+            Payroll::create([
+                'user_id' => $worker->id,
+                'flock_id' => $flock->id,
+                'base_salary' => $baseSalary,
+                'bonus_amount' => $bonusAmount,
+                'total_paid' => $totalPaid,
+                'payment_date' => now()->toDateString(),
+            ]);
+
+            if ($totalPaid > 0) {
+                CashFlow::create([
+                    'transaction_date' => now()->toDateString(),
+                    'description' => "Pembayaran Gaji & Bonus: {$worker->name} ({$flock->name})",
+                    'type' => 'out',
+                    'amount' => $totalPaid,
+                ]);
+            }
+        });
 
         $statusMsg = $bonusAmount > 0
             ? "Gaji berhasil diterbitkan! Pekerja {$worker->name} mendapatkan bonus performa Rp " . number_format($bonusAmount, 0, ',', '.') . " (IP: {$ip}, FCR: {$fcr}, Kategori: {$metrics['bonus_tier_label']})."

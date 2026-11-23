@@ -18,6 +18,7 @@ class ReportController extends Controller
      */
     public function exportCsv(Flock $flock)
     {
+        Gate::authorize('manage-enterprise');
         Gate::authorize('view', $flock);
 
         $filename = "laporan_kandang_" . Str::slug($flock->name) . "_" . date('Y-m-d') . ".csv";

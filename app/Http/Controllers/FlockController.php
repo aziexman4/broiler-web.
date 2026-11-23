@@ -34,8 +34,14 @@ class FlockController extends Controller
         $globalMarketPrice = $user->isOwner()
             ? (\App\Models\SystemSetting::where('key', 'global_market_price')->first()->value ?? 23000)
             : null;
+        $docPrice = $user->isOwner()
+            ? (\App\Models\SystemSetting::where('key', 'doc_price')->first()->value ?? 8000)
+            : null;
+        $feedPrice = $user->isOwner()
+            ? (\App\Models\SystemSetting::where('key', 'feed_price')->first()->value ?? 9000)
+            : null;
 
-        return view('flocks.index', compact('flocks', 'workers', 'coops', 'globalMarketPrice'));
+        return view('flocks.index', compact('flocks', 'workers', 'coops', 'globalMarketPrice', 'docPrice', 'feedPrice'));
     }
 
     /**
@@ -174,7 +180,8 @@ class FlockController extends Controller
      */
     public function edit(Flock $flock)
     {
-        Gate::authorize('update', $flock);
+        Gate::authorize('manage-enterprise');
+        abort_if($flock->status === 'closed', 403, 'Siklus kandang sudah ditutup (Closed). Data siklus tidak dapat diubah.');
 
         $workers = User::where('role', 'worker')->get();
         $coops = Coop::all();
@@ -187,7 +194,8 @@ class FlockController extends Controller
      */
     public function update(Request $request, Flock $flock)
     {
-        Gate::authorize('update', $flock);
+        Gate::authorize('manage-enterprise');
+        abort_if($flock->status === 'closed', 403, 'Siklus kandang sudah ditutup (Closed). Data siklus tidak dapat diubah.');
 
         $validated = $request->validate([
             'coop_id' => 'nullable|exists:coops,id',

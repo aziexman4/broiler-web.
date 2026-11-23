@@ -32,9 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Modul Kandang Utama & Cetak Laporan
+    // Modul Kandang Utama & Cetak Laporan Operasional
     Route::resource('flocks', FlockController::class);
-    Route::get('/flocks/{flock}/export-csv', [ReportController::class, 'exportCsv'])->name('flocks.export-csv');
     Route::get('/flocks/{flock}/report/daily-record', [ReportController::class, 'dailyRecordPreview'])->name('reports.daily-record');
 
     // Modul Slip Gaji Pekerja (Self-Service & Ownership Guard)
@@ -47,11 +46,6 @@ Route::middleware('auth')->group(function () {
     Route::put('/daily-records/{dailyRecord}', [DailyRecordController::class, 'update'])->name('daily_records.update');
     Route::delete('/daily-records/{dailyRecord}', [DailyRecordController::class, 'destroy'])->name('daily_records.destroy');
 
-    // Modul Panen Otomatis & Finansial
-    Route::get('/flocks/{flock}/harvests/create', [HarvestController::class, 'create'])->name('harvests.create');
-    Route::post('/flocks/{flock}/harvests', [HarvestController::class, 'store'])->name('harvests.store');
-    Route::post('/flocks/{flock}/harvests/auto', [HarvestController::class, 'autoStore'])->name('harvests.auto');
-    
     // Feed Logistics Routes
     Route::post('/flocks/{flock}/feed-requests', [\App\Http\Controllers\FeedRequestController::class, 'store'])->name('feed_requests.store');
     Route::post('/feed-requests/{feedRequest}/ship', [\App\Http\Controllers\FeedRequestController::class, 'ship'])->name('feed_requests.ship');
@@ -94,8 +88,14 @@ Route::middleware('auth')->group(function () {
         // Modul Riwayat Finansial Global
         Route::get('/financial-history', [HarvestController::class, 'index'])->name('financial.history');
 
-        // Laporan Akhir Panen & P&L Kandang (Owner Only)
+        // Laporan Akhir Panen, CSV & P&L Kandang (Owner Only)
+        Route::get('/flocks/{flock}/export-csv', [ReportController::class, 'exportCsv'])->name('flocks.export-csv');
         Route::get('/flocks/{flock}/export-pdf', [HarvestController::class, 'exportPdf'])->name('flocks.export-pdf');
+
+        // Modul Panen Otomatis & Finansial (Owner Only)
+        Route::get('/flocks/{flock}/harvests/create', [HarvestController::class, 'create'])->name('harvests.create');
+        Route::post('/flocks/{flock}/harvests', [HarvestController::class, 'store'])->name('harvests.store');
+        Route::post('/flocks/{flock}/harvests/auto', [HarvestController::class, 'autoStore'])->name('harvests.auto');
 
         // Modul Penggajian Pekerja (Payroll)
         Route::resource('payrolls', PayrollController::class)->only(['index', 'store']);

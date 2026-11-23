@@ -55,25 +55,42 @@
             @endif
 
             @if(Auth::user()->isOwner())
-            <!-- Global Market Price Widget -->
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between mb-6 gap-4 transition-all hover:shadow-lg">
-                <div class="flex items-center gap-4 w-full md:w-auto">
+            <!-- Enterprise Pricing Settings Widget -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-md border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 transition-all hover:shadow-lg">
+                <div class="flex items-center gap-4">
                     <div class="p-3 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl hidden sm:block">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Harga Pasar Global (Live)</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Digunakan untuk acuan otomatis Target BEP pertumbuhan ayam.</p>
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">Pengaturan Harga Acuan (Live Market, DOC &amp; Pakan)</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Acuan otomatis Target BEP harian, proyeksi P&amp;L berjalan, dan Panen Otomatis 1-Klik.</p>
                     </div>
                 </div>
 
-                <form action="{{ route('settings.updatePrice') }}" method="POST" class="flex items-center gap-2 w-full md:w-auto">
+                <form action="{{ route('settings.updatePrice') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-4 items-end gap-3 w-full lg:w-auto">
                     @csrf
-                    <div class="relative flex-1 md:w-40">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-500 font-medium">Rp</span>
-                        <input type="number" name="global_market_price" value="{{ $globalMarketPrice }}" required class="pl-10 w-full rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:border-emerald-500 focus:ring-emerald-500 font-bold shadow-md">
+                    <div>
+                        <label for="global_market_price" class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Harga Ayam (/Kg)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                            <input id="global_market_price" type="number" name="global_market_price" value="{{ $globalMarketPrice }}" min="0" required class="pl-9 w-full sm:w-36 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:border-emerald-500 focus:ring-emerald-500 font-bold shadow-sm">
+                        </div>
                     </div>
-                    <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-2xl shadow-md hover:-translate-y-0.5 transition-all whitespace-nowrap">
+                    <div>
+                        <label for="doc_price" class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Harga DOC (/Ekor)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                            <input id="doc_price" type="number" name="doc_price" value="{{ $docPrice }}" min="0" class="pl-9 w-full sm:w-36 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:border-emerald-500 focus:ring-emerald-500 font-bold shadow-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="feed_price" class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Harga Pakan (/Kg)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-slate-500 dark:text-slate-400 font-medium">Rp</span>
+                            <input id="feed_price" type="number" name="feed_price" value="{{ $feedPrice }}" min="0" class="pl-9 w-full sm:w-36 rounded-xl border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white text-sm focus:border-emerald-500 focus:ring-emerald-500 font-bold shadow-sm">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md hover:-translate-y-0.5 transition-all whitespace-nowrap">
                         Simpan Harga
                     </button>
                 </form>

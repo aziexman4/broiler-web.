@@ -6,6 +6,7 @@ use App\Models\FeedRequest;
 use App\Models\Flock;
 use App\Models\FeedInventory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class FeedRequestController extends Controller
@@ -50,16 +51,44 @@ class FeedRequestController extends Controller
 
         $this->ensureFlockIsActive($feedRequest->flock);
 
-        FeedInventory::create([
-            'transaction_date' => now(),
-            'feed_name' => $feedRequest->feed_type . ' (Kirim ke Kandang)',
-            'transaction_type' => 'out',
-            'quantity_kg' => $feedRequest->amount_kg,
-            'flock_id' => $feedRequest->flock_id,
-            'notes' => 'Dikirim ke Kandang: ' . $feedRequest->flock->name
-        ]);
+        $errorMsg = null;
 
-        $feedRequest->update(['status' => 'shipped']);
+        DB::transaction(function () use ($feedRequest, &$errorMsg) {
+            $lockedRequest = FeedRequest::lockForUpdate()->findOrFail($feedRequest->id);
+
+            if ($lockedRequest->status !== 'pending') {
+                $errorMsg = 'Permintaan pakan ini sudah diproses dan tidak dapat dikirim ulang.';
+                return;
+            }
+
+            $totalIn = (float) FeedInventory::where('transaction_type', 'in')->sum('quantity_kg');
+            $totalOut = (float) FeedInventory::where('transaction_type', 'out')->sum('quantity_kg');
+            $availableStock = $totalIn - $totalOut;
+
+            if ($availableStock < (float) $lockedRequest->amount_kg) {
+                $errorMsg = 'Stok Gudang Pusat tidak mencukupi untuk pengiriman ini (Tersedia: '
+                    . number_format($availableStock, 2)
+                    . ' kg, Diminta: '
+                    . number_format((float) $lockedRequest->amount_kg, 2)
+                    . ' kg).';
+                return;
+            }
+
+            FeedInventory::create([
+                'transaction_date' => now(),
+                'feed_name' => $lockedRequest->feed_type . ' (Kirim ke Kandang)',
+                'transaction_type' => 'out',
+                'quantity_kg' => $lockedRequest->amount_kg,
+                'flock_id' => $lockedRequest->flock_id,
+                'notes' => 'Dikirim ke Kandang: ' . $lockedRequest->flock->name
+            ]);
+
+            $lockedRequest->update(['status' => 'shipped']);
+        });
+
+        if ($errorMsg !== null) {
+            return back()->with('error', $errorMsg);
+        }
 
         return back()->with('success', 'Pakan berhasil dikirim ke Kandang.');
     }
@@ -69,22 +98,26 @@ class FeedRequestController extends Controller
         Gate::authorize('update', $feedRequest->flock);
         $this->ensureFlockIsActive($feedRequest->flock);
 
-        if ($feedRequest->status !== 'shipped') {
-            abort(400, 'Status tidak valid.');
-        }
+        DB::transaction(function () use ($feedRequest) {
+            $lockedRequest = FeedRequest::lockForUpdate()->findOrFail($feedRequest->id);
 
-        $feedRequest->update(['status' => 'completed']);
-        
-        $flock = $feedRequest->flock;
+            if ($lockedRequest->status !== 'shipped') {
+                abort(400, 'Status tidak valid.');
+            }
 
-        // Increment specific stock based on feed type
-        if ($feedRequest->feed_type === 'Pre-Starter') {
-            $flock->increment('stock_pre_starter_kg', $feedRequest->amount_kg);
-        } elseif ($feedRequest->feed_type === 'Starter') {
-            $flock->increment('stock_starter_kg', $feedRequest->amount_kg);
-        } elseif ($feedRequest->feed_type === 'Finisher') {
-            $flock->increment('stock_finisher_kg', $feedRequest->amount_kg);
-        }
+            $lockedRequest->update(['status' => 'completed']);
+
+            $flock = $lockedRequest->flock;
+
+            // Increment specific stock based on feed type
+            if ($lockedRequest->feed_type === 'Pre-Starter') {
+                $flock->increment('stock_pre_starter_kg', $lockedRequest->amount_kg);
+            } elseif ($lockedRequest->feed_type === 'Starter') {
+                $flock->increment('stock_starter_kg', $lockedRequest->amount_kg);
+            } elseif ($lockedRequest->feed_type === 'Finisher') {
+                $flock->increment('stock_finisher_kg', $lockedRequest->amount_kg);
+            }
+        });
 
         return back()->with('success', 'Pakan telah diterima dan masuk ke stok Kandang.');
     }

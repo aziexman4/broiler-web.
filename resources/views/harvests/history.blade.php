@@ -112,7 +112,8 @@
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5">Nama Kandang</th>
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5">Harga Ayam / Kg</th>
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5">Harga Pakan / Kg</th>
-                                <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 text-right">Laba Bersih</th>
+                                <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 text-right">Beban Gaji (Payroll)</th>
+                                <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-700 px-6 py-3.5 text-right">Laba Bersih Final</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200/70 dark:divide-slate-700/70">
@@ -132,13 +133,16 @@
                                     <td class="px-6 py-4 dark:text-slate-300">
                                         Rp {{ number_format($harvest->feed_price_per_kg, 0, ',', '.') }}
                                     </td>
-                                    <td class="px-6 py-4 text-right font-bold {{ $harvest->net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
-                                        Rp {{ number_format($harvest->net_profit, 0, ',', '.') }}
+                                    <td class="px-6 py-4 text-right text-rose-600 dark:text-rose-400">
+                                        Rp {{ number_format($harvest->labor_cost ?? 0, 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-bold {{ ($harvest->true_net_profit ?? $harvest->net_profit) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                        Rp {{ number_format($harvest->true_net_profit ?? $harvest->net_profit, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-10 text-center text-slate-400 dark:text-slate-500">
+                                    <td colspan="6" class="px-6 py-10 text-center text-slate-400 dark:text-slate-500">
                                         <svg class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>

@@ -2,9 +2,9 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div>
-                <h2 class="font-semibold text-xl text-slate-800 leading-tight">
+                <h2 class="font-semibold text-xl text-slate-800 dark:text-slate-100 leading-tight">
                     {{ $flock->name }}
-                    <span class="ms-2 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $flock->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800' }}">
+                    <span class="ms-2 px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $flock->status === 'active' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300' : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200' }}">
                         {{ ucfirst($flock->status) }}
                     </span>
                 </h2>
@@ -22,7 +22,7 @@
                 @endif
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{{ route('flocks.index') }}" class="text-sm text-slate-600 hover:text-slate-900">
+                <a href="{{ route('flocks.index') }}" class="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
                     &larr; Kembali
                 </a>
                 @if(Auth::user()->isOwner())
@@ -72,6 +72,24 @@
 
     <div class="py-12" x-data="dailyRecordSlideOver()" @open-slide-over.window="openPanel = true">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            @if (session('success'))
+                <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 flex items-center space-x-3 shadow-md">
+                    <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium">{{ session('success') }}</span>
+                </div>
+            @endif
+
+            @if (session('error'))
+                <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 flex items-center space-x-3 shadow-md">
+                    <svg class="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium">{{ session('error') }}</span>
+                </div>
+            @endif
 
             <!-- Metric Summary KPI Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -157,26 +175,26 @@
                 @endcan
 
                 <!-- Live BEP Target Tracker Chart -->
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-200">
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-md border border-slate-200 dark:border-slate-700">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-slate-900">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">
                             {{ $flock->status === 'active' ? 'Live BEP Target Tracker (Forecasting)' : 'Historical BEP Tracker (Retrospeksi)' }}
                         </h3>
                         @if($flock->status === 'active')
-                            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full animate-pulse">Live Forecasting</span>
+                            <span class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-xs font-bold px-3 py-1 rounded-full animate-pulse">Live Forecasting</span>
                         @else
-                            <span class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full border border-slate-200">🔒 Terkunci (Selesai Panen)</span>
+                            <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-3 py-1 rounded-full border border-slate-200 dark:border-slate-600">🔒 Terkunci (Selesai Panen)</span>
                         @endif
                     </div>
                     <div class="relative h-80 w-full">
                         <canvas id="bepChart"></canvas>
                     </div>
                     <div class="mt-4 text-center">
-                        <p class="text-sm text-slate-600">
+                        <p class="text-sm text-slate-600 dark:text-slate-300">
                             Grafik ini membandingkan <strong>Pertumbuhan Aktual (Biru)</strong> dengan <strong>Target Break-Even Point (Merah)</strong>.
                         </p>
-                        <p class="text-xs text-slate-500 mt-1">
-                            Jika garis biru berada di atas garis merah, peternakan dalam posisi <span class="text-emerald-600 font-bold">POTENSI PROFIT</span> pada hari tersebut.
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            Jika garis biru berada di atas garis merah, peternakan dalam posisi <span class="text-emerald-600 dark:text-emerald-400 font-bold">POTENSI PROFIT</span> pada hari tersebut.
                         </p>
                     </div>
                 </div>
@@ -274,12 +292,12 @@
                 </div>
 
                 <!-- Daily Records Table with FEATURE 3: EWS High Mortality Highlight -->
-                <div class="bg-white overflow-hidden shadow-md sm:rounded-xl">
-                    <div class="p-6 text-slate-900">
+                <div class="bg-white dark:bg-slate-800 overflow-hidden shadow-md sm:rounded-xl border border-slate-200/80 dark:border-slate-700 transition-colors">
+                    <div class="p-6 text-slate-900 dark:text-slate-100">
                         <div class="flex justify-between items-center mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold text-slate-900">Riwayat Catatan Harian</h3>
-                                <p class="text-xs text-slate-500">Baris merah menandakan Peringatan Dini Kematian Tinggi (> 0.5% populasi)</p>
+                                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Riwayat Catatan Harian</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Baris merah menandakan Peringatan Dini Kematian Tinggi (> 0.5% populasi)</p>
                             </div>
                             @if($flock->status === 'active')
                             <button @click="openPanel = true" type="button" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-md shadow-md transition">
@@ -289,11 +307,11 @@
                         </div>
 
                         @if($dailyRecords->isEmpty())
-                        <div class="text-center py-6 text-slate-500 text-sm">
+                        <div class="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
                             Belum ada catatan harian untuk kandang ini.
                         </div>
                         @else
-                        <div class="max-h-[500px] overflow-y-auto overflow-x-auto relative shadow-md sm:rounded-xl border border-slate-200">
+                        <div class="max-h-[500px] overflow-y-auto overflow-x-auto relative shadow-md sm:rounded-xl border border-slate-200 dark:border-slate-700">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider">
@@ -305,14 +323,14 @@
                                         <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4 text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm" id="dailyRecordsTableBody">
+                                <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-sm" id="dailyRecordsTableBody">
                                     @foreach($dailyRecords as $record)
                                     @php
                                     // FEATURE 3: EWS Mortality Warning Calculation (> 0.5% initial population)
                                     $mortalityRate = $flock->initial_population > 0 ? ($record->mortality / $flock->initial_population) : 0;
                                     $isHighMortality = $mortalityRate > 0.005;
                                     @endphp
-                                    <tr class="{{ $isHighMortality ? 'bg-red-50 text-red-900 border-l-4 border-red-500' : 'hover:bg-gray-50' }}">
+                                    <tr class="{{ $isHighMortality ? 'bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200 border-l-4 border-red-500' : 'hover:bg-gray-50 dark:hover:bg-slate-700/40' }}">
                                         <td class="py-3 px-4 font-medium">{{ \Carbon\Carbon::parse($record->record_date)->format('d M Y') }}</td>
                                         <td class="py-3 px-4 font-semibold {{ $isHighMortality ? 'text-red-700 dark:text-red-400 font-bold' : 'text-red-600 dark:text-red-400' }}">
                                             {{ number_format($record->mortality) }} ekor
@@ -335,7 +353,7 @@
                                             <form action="{{ route('daily_records.destroy', $record) }}" method="POST" onsubmit="return confirm('Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang.');" class="inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded text-xs font-semibold transition-colors">
+                                                <button type="submit" class="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 px-2 py-1 rounded text-xs font-semibold transition-colors">
                                                     Hapus
                                                 </button>
                                             </form>
@@ -386,7 +404,7 @@
 
                     <div class="p-0">
                         @if($feedRequests->isEmpty())
-                        <div class="text-center py-6 text-slate-500 text-sm">
+                        <div class="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
                             Belum ada riwayat permintaan pakan.
                         </div>
                         @else
@@ -401,9 +419,9 @@
                                         <th class="py-3 px-4 border-b dark:border-slate-600 text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm">
+                                <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-sm dark:text-slate-200">
                                     @foreach($feedRequests as $request)
-                                    <tr class="hover:bg-slate-50">
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
                                         <td class="py-3 px-4 font-medium">{{ \Carbon\Carbon::parse($request->created_at)->format('d M Y H:i') }}</td>
                                         <td class="py-3 px-4">{{ $request->feed_type }}</td>
                                         <td class="py-3 px-4 font-bold text-indigo-600 dark:text-indigo-400">{{ number_format($request->amount_kg, 2) }} kg</td>
@@ -449,12 +467,12 @@
                 </div>
 
                 <!-- Harvest Data Table Section -->
-                <div class="bg-white overflow-hidden shadow-md sm:rounded-xl">
-                    <div class="p-6 text-slate-900">
+                <div class="bg-white dark:bg-slate-800 overflow-hidden shadow-md sm:rounded-xl border border-slate-200/80 dark:border-slate-700 transition-colors">
+                    <div class="p-6 text-slate-900 dark:text-slate-100">
                         <div class="flex justify-between items-center mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold text-slate-900">Data Panen & Penutupan Kandang</h3>
-                                <p class="text-xs text-slate-500">Catatan hasil panen dan pendapatan</p>
+                                <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Data Panen &amp; Penutupan Kandang</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Catatan hasil panen dan pendapatan</p>
                             </div>
                             @if(Auth::user()->isOwner() && $flock->status === 'active')
                             <form action="{{ route('harvests.auto', $flock) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin memanen kandang ini sekarang? Data laba-rugi akan dikalkulasi secara otomatis berdasarkan proyeksi harian terakhir.');">
@@ -468,34 +486,34 @@
                         </div>
 
                         @if($harvests->isEmpty())
-                        <div class="text-center py-6 text-slate-500 text-sm">
+                        <div class="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
                             Belum ada data panen untuk kandang ini.
                         </div>
                         @else
-                        <div class="max-h-[500px] overflow-y-auto overflow-x-auto relative shadow-md sm:rounded-xl border border-slate-200">
+                        <div class="max-h-[500px] overflow-y-auto overflow-x-auto relative shadow-md sm:rounded-xl border border-slate-200 dark:border-slate-700">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="border-b bg-slate-50 text-slate-600 text-xs font-semibold uppercase tracking-wider">
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Tanggal Panen</th>
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Ayam Terjual</th>
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Total Berat</th>
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Nama Pembeli</th>
+                                    <tr class="border-b dark:border-slate-700 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold uppercase tracking-wider">
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4">Tanggal Panen</th>
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4">Ayam Terjual</th>
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4">Total Berat</th>
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4">Nama Pembeli</th>
                                         @can('manage-enterprise')
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4">Pendapatan Kotor</th>
-                                        <th class="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 py-3 px-4 text-right">Laba Bersih</th>
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4">Pendapatan Kotor</th>
+                                        <th class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 py-3 px-4 text-right">Laba Bersih</th>
                                         @endcan
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-100 text-sm">
+                                <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-sm">
                                     @foreach($harvests as $harvest)
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="py-3 px-4 font-medium text-slate-900">{{ \Carbon\Carbon::parse($harvest->harvest_date)->format('d M Y') }}</td>
-                                        <td class="py-3 px-4 text-gray-700 font-semibold">{{ number_format($harvest->total_chickens_sold) }} ekor</td>
-                                        <td class="py-3 px-4 text-gray-700 font-semibold">{{ number_format($harvest->total_weight_kg, 2) }} kg</td>
-                                        <td class="py-3 px-4 text-slate-600">{{ $harvest->buyer_name }}</td>
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                                        <td class="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">{{ \Carbon\Carbon::parse($harvest->harvest_date)->format('d M Y') }}</td>
+                                        <td class="py-3 px-4 text-gray-700 dark:text-slate-300 font-semibold">{{ number_format($harvest->total_chickens_sold) }} ekor</td>
+                                        <td class="py-3 px-4 text-gray-700 dark:text-slate-300 font-semibold">{{ number_format($harvest->total_weight_kg, 2) }} kg</td>
+                                        <td class="py-3 px-4 text-slate-600 dark:text-slate-300">{{ $harvest->buyer_name }}</td>
                                         @can('manage-enterprise')
-                                        <td class="py-3 px-4 font-medium text-indigo-600">Rp {{ number_format($harvest->gross_revenue, 0, ',', '.') }}</td>
-                                        <td class="py-3 px-4 text-right font-extrabold text-emerald-600">Rp {{ number_format($harvest->net_profit, 0, ',', '.') }}</td>
+                                        <td class="py-3 px-4 font-medium text-indigo-600 dark:text-indigo-400">Rp {{ number_format($harvest->gross_revenue, 0, ',', '.') }}</td>
+                                        <td class="py-3 px-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">Rp {{ number_format($harvest->net_profit, 0, ',', '.') }}</td>
                                         @endcan
                                     </tr>
                                     @endforeach
@@ -517,8 +535,8 @@
                 <div class="w-screen max-w-md transform transition ease-in-out duration-300 sm:duration-500"
                      x-show="openPanel" x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
                     
-                    <div class="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
-                        <div class="bg-indigo-700 px-4 py-6 sm:px-6">
+                    <div class="flex h-full flex-col overflow-y-scroll bg-white dark:bg-slate-900 shadow-xl transition-colors">
+                        <div class="bg-indigo-700 dark:bg-indigo-900 px-4 py-6 sm:px-6">
                             <div class="flex items-center justify-between">
                                 <h2 class="text-base font-semibold leading-6 text-white" id="slide-over-title">Input Catatan Harian</h2>
                                 <div class="ml-3 flex h-7 items-center">
@@ -540,93 +558,93 @@
                         <div class="relative flex-1 px-4 py-6 sm:px-6">
                             <form @submit.prevent="submitForm" class="space-y-6">
                                 <div>
-                                    <label class="block text-sm font-medium leading-6 text-slate-900">Tanggal Record</label>
+                                    <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-100">Tanggal Record</label>
                                     <div class="mt-2">
-                                        <input type="date" x-model="formData.record_date" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-md ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        <input type="date" x-model="formData.record_date" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-gray-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
                                     </div>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium leading-6 text-slate-900">Mati (Ekor)</label>
+                                        <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-100">Mati (Ekor)</label>
                                         <div class="mt-2">
-                                            <input type="number" min="0" x-model="formData.mortality" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-md ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                            <input type="number" min="0" x-model="formData.mortality" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-gray-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium leading-6 text-slate-900">Afkir (Ekor)</label>
+                                        <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-100">Afkir (Ekor)</label>
                                         <div class="mt-2">
-                                            <input type="number" min="0" x-model="formData.culling" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-md ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                            <input type="number" min="0" x-model="formData.culling" required class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-gray-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="space-y-4">
-                                    <label class="block text-sm font-bold leading-6 text-slate-900 border-b pb-1">Konsumsi Pakan per Fase (Kg)</label>
+                                    <label class="block text-sm font-bold leading-6 text-slate-900 dark:text-slate-100 border-b dark:border-slate-700 pb-1">Konsumsi Pakan per Fase (Kg)</label>
                                     
                                     <!-- Pre-Starter -->
-                                    <div class="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                                    <div class="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3 border border-amber-100 dark:border-amber-800">
                                         <div class="flex justify-between items-center mb-1">
-                                            <label class="block text-xs font-bold text-amber-900">Pre-Starter</label>
-                                            <span class="text-[10px] font-medium" :class="formData.feed_pre_starter_kg > stocks.pre_starter ? 'text-red-600 font-bold' : 'text-amber-700'">
+                                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-200">Pre-Starter</label>
+                                            <span class="text-[10px] font-medium" :class="formData.feed_pre_starter_kg > stocks.pre_starter ? 'text-red-600 dark:text-red-400 font-bold' : 'text-amber-700 dark:text-amber-300'">
                                                 Sisa: <span x-text="stocks.pre_starter.toFixed(2)"></span> Kg
                                             </span>
                                         </div>
-                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_pre_starter_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 shadow-md ring-1 ring-inset ring-amber-300 focus:ring-2 focus:ring-inset focus:ring-amber-500 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50': formData.feed_pre_starter_kg > stocks.pre_starter}">
+                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_pre_starter_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-amber-300 dark:ring-amber-700 focus:ring-2 focus:ring-inset focus:ring-amber-500 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50 dark:bg-red-950/40 dark:text-red-200': formData.feed_pre_starter_kg > stocks.pre_starter}">
                                     </div>
 
                                     <!-- Starter -->
-                                    <div class="bg-amber-100 rounded-xl p-3 border border-amber-200">
+                                    <div class="bg-amber-100 dark:bg-amber-950/40 rounded-xl p-3 border border-amber-200 dark:border-amber-800">
                                         <div class="flex justify-between items-center mb-1">
-                                            <label class="block text-xs font-bold text-amber-900">Starter</label>
-                                            <span class="text-[10px] font-medium" :class="formData.feed_starter_kg > stocks.starter ? 'text-red-600 font-bold' : 'text-amber-800'">
+                                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-200">Starter</label>
+                                            <span class="text-[10px] font-medium" :class="formData.feed_starter_kg > stocks.starter ? 'text-red-600 dark:text-red-400 font-bold' : 'text-amber-800 dark:text-amber-300'">
                                                 Sisa: <span x-text="stocks.starter.toFixed(2)"></span> Kg
                                             </span>
                                         </div>
-                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_starter_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 shadow-md ring-1 ring-inset ring-amber-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50': formData.feed_starter_kg > stocks.starter}">
+                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_starter_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-amber-400 dark:ring-amber-700 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50 dark:bg-red-950/40 dark:text-red-200': formData.feed_starter_kg > stocks.starter}">
                                     </div>
 
                                     <!-- Finisher -->
-                                    <div class="bg-amber-200 rounded-xl p-3 border border-amber-300">
+                                    <div class="bg-amber-200 dark:bg-amber-950/50 rounded-xl p-3 border border-amber-300 dark:border-amber-800">
                                         <div class="flex justify-between items-center mb-1">
-                                            <label class="block text-xs font-bold text-amber-900">Finisher</label>
-                                            <span class="text-[10px] font-medium" :class="formData.feed_finisher_kg > stocks.finisher ? 'text-red-600 font-bold' : 'text-amber-900'">
+                                            <label class="block text-xs font-bold text-amber-900 dark:text-amber-200">Finisher</label>
+                                            <span class="text-[10px] font-medium" :class="formData.feed_finisher_kg > stocks.finisher ? 'text-red-600 dark:text-red-400 font-bold' : 'text-amber-900 dark:text-amber-300'">
                                                 Sisa: <span x-text="stocks.finisher.toFixed(2)"></span> Kg
                                             </span>
                                         </div>
-                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_finisher_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 shadow-md ring-1 ring-inset ring-amber-500 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50': formData.feed_finisher_kg > stocks.finisher}">
+                                        <input type="number" min="0" step="0.01" x-model.number="formData.feed_finisher_kg" required class="block w-full rounded-md border-0 py-2 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-amber-500 dark:ring-amber-700 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm sm:leading-6 transition-all" :class="{'ring-red-500 focus:ring-red-500 text-red-900 bg-red-50 dark:bg-red-950/40 dark:text-red-200': formData.feed_finisher_kg > stocks.finisher}">
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-medium leading-6 text-slate-900">Bobot Rata-rata (Gram/Ekor)</label>
+                                    <label class="block text-sm font-medium leading-6 text-slate-900 dark:text-slate-100">Bobot Rata-rata (Gram/Ekor)</label>
                                     <div class="mt-2">
-                                        <input type="number" id="average_weight_gram" min="0" x-model="formData.average_weight_gram" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-md ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                                        <input type="number" id="average_weight_gram" min="0" x-model="formData.average_weight_gram" class="block w-full rounded-md border-0 py-1.5 text-slate-900 dark:text-slate-100 dark:bg-slate-800 shadow-md ring-1 ring-inset ring-gray-300 dark:ring-slate-700 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
                                     </div>
                                     
                                     <!-- Mulai: Widget Kalkulator Sampling Acak -->
-                                    <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl shadow-md">
-                                        <h4 class="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                                    <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800 rounded-xl shadow-md">
+                                        <h4 class="text-sm font-bold text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                                             <span>⚖️</span> Kalkulator Sampling Acak (3 Karung x 10 Ekor)
                                         </h4>
                                         
                                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
                                             <div>
-                                                <label for="sample_1" class="block text-xs text-blue-700 font-semibold mb-1 uppercase tracking-wide">Karung 1 (Kg)</label>
-                                                <input type="number" id="sample_1" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 focus:border-blue-500 focus:ring-blue-500 bg-white">
+                                                <label for="sample_1" class="block text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1 uppercase tracking-wide">Karung 1 (Kg)</label>
+                                                <input type="number" id="sample_1" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100">
                                             </div>
                                             <div>
-                                                <label for="sample_2" class="block text-xs text-blue-700 font-semibold mb-1 uppercase tracking-wide">Karung 2 (Kg)</label>
-                                                <input type="number" id="sample_2" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 focus:border-blue-500 focus:ring-blue-500 bg-white">
+                                                <label for="sample_2" class="block text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1 uppercase tracking-wide">Karung 2 (Kg)</label>
+                                                <input type="number" id="sample_2" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100">
                                             </div>
                                             <div>
-                                                <label for="sample_3" class="block text-xs text-blue-700 font-semibold mb-1 uppercase tracking-wide">Karung 3 (Kg)</label>
-                                                <input type="number" id="sample_3" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 focus:border-blue-500 focus:ring-blue-500 bg-white">
+                                                <label for="sample_3" class="block text-xs text-blue-700 dark:text-blue-300 font-semibold mb-1 uppercase tracking-wide">Karung 3 (Kg)</label>
+                                                <input type="number" id="sample_3" placeholder="0.00" step="0.01" min="0" class="w-full text-sm rounded border-blue-200 dark:border-blue-700 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-slate-100">
                                             </div>
                                         </div>
                                         
-                                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 pt-3 border-t border-blue-200 gap-3">
-                                            <span id="calc_result" class="font-black text-lg text-blue-700">Hasil: 0 Gram/Ekor</span>
+                                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 pt-3 border-t border-blue-200 dark:border-blue-800 gap-3">
+                                            <span id="calc_result" class="font-black text-lg text-blue-700 dark:text-blue-300">Hasil: 0 Gram/Ekor</span>
                                             <button type="button" id="btn_apply_weight" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2 rounded shadow transition w-full sm:w-auto">
                                                 Gunakan Hasil Ini
                                             </button>
@@ -637,17 +655,17 @@
 
                                 <!-- Error messages from server -->
                                 <template x-if="errorMessage">
-                                    <div class="rounded-md bg-red-50 p-4 mt-4">
+                                    <div class="rounded-md bg-red-50 dark:bg-red-950/40 p-4 mt-4 border border-red-200 dark:border-red-800">
                                         <div class="flex">
                                             <div class="ml-3">
-                                                <h3 class="text-sm font-medium text-red-800" x-text="errorMessage"></h3>
+                                                <h3 class="text-sm font-medium text-red-800 dark:text-red-300" x-text="errorMessage"></h3>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
 
-                                <div class="pt-4 flex justify-end gap-3 border-t border-slate-200 mt-6 pt-6">
-                                    <button type="button" @click="openPanel = false" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-md ring-1 ring-inset ring-gray-300 hover:bg-slate-50">Batal</button>
+                                <div class="pt-4 flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700 mt-6 pt-6">
+                                    <button type="button" @click="openPanel = false" class="rounded-md bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-md ring-1 ring-inset ring-gray-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700">Batal</button>
                                     <button type="submit" :disabled="isSubmitting" class="inline-flex justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50">
                                         <span x-show="!isSubmitting">Simpan Catatan</span>
                                         <span x-show="isSubmitting">Menyimpan...</span>
