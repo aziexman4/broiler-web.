@@ -13,9 +13,22 @@ class DailyRecordController extends Controller
     /**
      * Show the form for creating a new daily record for a flock.
      */
+    /**
+     * Reject any mutation attempt when a flock cycle has been closed.
+     */
+    private function ensureFlockIsActive(Flock $flock): void
+    {
+        abort_if(
+            $flock->status === 'closed',
+            403,
+            'Siklus kandang sudah ditutup (Closed). Data recording harian tidak dapat ditambahkan atau diubah lagi.'
+        );
+    }
+
     public function create(Flock $flock)
     {
         Gate::authorize('update', $flock);
+        $this->ensureFlockIsActive($flock);
 
         return view('daily_records.create', compact('flock'));
     }
@@ -26,6 +39,7 @@ class DailyRecordController extends Controller
     public function store(Request $request, Flock $flock)
     {
         Gate::authorize('update', $flock);
+        $this->ensureFlockIsActive($flock);
 
         $validated = $request->validate([
             'record_date' => 'required|date',
@@ -157,6 +171,7 @@ class DailyRecordController extends Controller
     {
         $flock = $dailyRecord->flock;
         Gate::authorize('update', $flock);
+        $this->ensureFlockIsActive($flock);
 
         // Maksimal pakan yang diizinkan adalah stok saat ini + pakan yang sebelumnya dipakai di record ini
         $maxPreStarter = $flock->stock_pre_starter_kg + $dailyRecord->feed_pre_starter_kg;
@@ -220,6 +235,7 @@ class DailyRecordController extends Controller
     {
         $flock = $dailyRecord->flock;
         Gate::authorize('update', $flock);
+        $this->ensureFlockIsActive($flock);
 
         $feedPreStarter = $dailyRecord->feed_pre_starter_kg;
         $feedStarter = $dailyRecord->feed_starter_kg;

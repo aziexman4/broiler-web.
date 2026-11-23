@@ -164,6 +164,7 @@ class HarvestController extends Controller
      */
     public function exportPdf(Flock $flock)
     {
+        Gate::authorize('manage-enterprise');
         Gate::authorize('view', $flock);
 
         $flock->load(['coop', 'worker', 'dailyRecords', 'harvests']);

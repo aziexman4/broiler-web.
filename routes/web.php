@@ -34,8 +34,11 @@ Route::middleware('auth')->group(function () {
     // Modul Kandang Utama & Cetak Laporan
     Route::resource('flocks', FlockController::class);
     Route::get('/flocks/{flock}/export-csv', [ReportController::class, 'exportCsv'])->name('flocks.export-csv');
-    Route::get('/flocks/{flock}/export-pdf', [HarvestController::class, 'exportPdf'])->name('flocks.export-pdf');
     Route::get('/flocks/{flock}/report/daily-record', [ReportController::class, 'dailyRecordPreview'])->name('reports.daily-record');
+
+    // Modul Slip Gaji Pekerja (Self-Service & Ownership Guard)
+    Route::get('/my-payslips', [PayrollController::class, 'workerIndex'])->name('worker.payslips.index');
+    Route::get('/payrolls/{payroll}/payslip', [PayrollController::class, 'payslipPreview'])->name('payrolls.payslip');
 
     // Modul Catatan Harian
     Route::get('/flocks/{flock}/daily-records/create', [DailyRecordController::class, 'create'])->name('daily_records.create');
@@ -90,9 +93,11 @@ Route::middleware('auth')->group(function () {
         // Modul Riwayat Finansial Global
         Route::get('/financial-history', [HarvestController::class, 'index'])->name('financial.history');
 
+        // Laporan Akhir Panen & P&L Kandang (Owner Only)
+        Route::get('/flocks/{flock}/export-pdf', [HarvestController::class, 'exportPdf'])->name('flocks.export-pdf');
+
         // Modul Penggajian Pekerja (Payroll)
         Route::resource('payrolls', PayrollController::class)->only(['index', 'store']);
-        Route::get('/payrolls/{payroll}/payslip', [PayrollController::class, 'payslipPreview'])->name('payrolls.payslip');
     });
 });
 

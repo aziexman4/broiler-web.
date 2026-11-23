@@ -26,7 +26,7 @@
                     Daftar Kandang
                 </a>
 
-                <!-- Gudang Pakan -->
+                <!-- Gudang Pakan (Owner) -->
                 @if(Auth::user()->isOwner())
                     <a href="{{ route('feeds.index') }}" 
                        class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 {{ request()->routeIs('feeds.*') || request()->routeIs('feed.*') ? 'bg-indigo-600 text-white shadow-md font-semibold' : 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
@@ -34,6 +34,17 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                         Stok Gudang Pakan
+                    </a>
+                @endif
+
+                <!-- Slip Gaji Saya (Worker) -->
+                @if(Auth::user()->isWorker())
+                    <a href="{{ route('worker.payslips.index') }}"
+                       class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 {{ request()->routeIs('worker.payslips.*') ? 'bg-indigo-600 text-white shadow-md font-semibold' : 'text-slate-300 dark:text-slate-300 hover:bg-slate-800 dark:hover:bg-slate-800 hover:text-white dark:hover:text-white' }}">
+                        <svg class="w-5 h-5 me-3 {{ request()->routeIs('worker.payslips.*') ? 'text-white' : 'text-slate-400 dark:text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Slip Gaji Saya
                     </a>
                 @endif
 
@@ -189,6 +200,13 @@
                     <a href="{{ route('feed.index') }}" 
                        class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('feed.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
                         Stok Gudang Pakan
+                    </a>
+                @endif
+
+                @if(Auth::user()->isWorker())
+                    <a href="{{ route('worker.payslips.index') }}"
+                       class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 {{ request()->routeIs('worker.payslips.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 dark:text-slate-300 hover:bg-slate-800 dark:hover:bg-slate-800 hover:text-white dark:hover:text-white' }}">
+                        Slip Gaji Saya
                     </a>
                 @endif
 

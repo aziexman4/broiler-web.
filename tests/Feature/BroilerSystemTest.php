@@ -335,4 +335,172 @@ class BroilerSystemTest extends TestCase
         $payslipHtml->assertSee('( Mujawiri Apandie )');
         $payslipHtml->assertSee('( Pemilik Hanau )');
     }
+
+    public function test_worker_can_view_own_payslips_and_is_blocked_from_others(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Pemilik Utama']);
+        $workerA = User::factory()->create(['role' => 'worker', 'name' => 'Worker Satu', 'base_salary' => 2800000]);
+        $workerB = User::factory()->create(['role' => 'worker', 'name' => 'Worker Dua', 'base_salary' => 3000000]);
+
+        $flockA = Flock::create([
+            'name' => 'Kandang Worker Satu',
+            'breed' => 'Cobb',
+            'start_date' => '2026-08-01',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $workerA->id,
+        ]);
+
+        $flockB = Flock::create([
+            'name' => 'Kandang Worker Dua',
+            'breed' => 'Ross',
+            'start_date' => '2026-08-01',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $workerB->id,
+        ]);
+
+        $payrollA = \App\Models\Payroll::create([
+            'user_id' => $workerA->id,
+            'flock_id' => $flockA->id,
+            'base_salary' => 2800000,
+            'bonus_amount' => 420000,
+            'total_paid' => 3220000,
+            'payment_date' => '2026-09-10',
+        ]);
+
+        $payrollB = \App\Models\Payroll::create([
+            'user_id' => $workerB->id,
+            'flock_id' => $flockB->id,
+            'base_salary' => 3000000,
+            'bonus_amount' => 600000,
+            'total_paid' => 3600000,
+            'payment_date' => '2026-09-10',
+        ]);
+
+        // Worker A sees their own payslip page & menu link, never Worker B's payroll
+        $myPayslips = $this->actingAs($workerA)->get(route('worker.payslips.index'));
+        $myPayslips->assertOk();
+        $myPayslips->assertSee('Slip Gaji Saya');
+        $myPayslips->assertSee('Kandang Worker Satu');
+        $myPayslips->assertSee('3.220.000');
+        $myPayslips->assertDontSee('Kandang Worker Dua');
+        $myPayslips->assertDontSee('3.600.000');
+
+        // Worker A can print their own payslip but gets 403 for Worker B's payslip & company payroll index
+        $this->actingAs($workerA)->get(route('payrolls.payslip', $payrollA))->assertOk();
+        $this->actingAs($workerA)->get(route('payrolls.payslip', $payrollB))->assertForbidden();
+        $this->actingAs($workerA)->get(route('payrolls.index'))->assertForbidden();
+
+        // Owner can print any worker's payslip
+        $this->actingAs($owner)->get(route('payrolls.payslip', $payrollA))->assertOk();
+        $this->actingAs($owner)->get(route('payrolls.payslip', $payrollB))->assertOk();
+    }
+
+    public function test_worker_has_no_financial_leak_and_cannot_access_harvest_pnl_pdf(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker']);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Operasional Worker',
+            'breed' => 'Ross 308',
+            'start_date' => '2026-10-01',
+            'initial_population' => 1500,
+            'status' => 'active',
+            'worker_id' => $worker->id,
+        ]);
+
+        // flocks/index for worker must not show Rupiah amounts or market price widget
+        $indexResponse = $this->actingAs($worker)->get(route('flocks.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertViewHas('globalMarketPrice', null);
+        $indexResponse->assertDontSee('Harga Pasar Global');
+        $indexResponse->assertDontSee('Rp ');
+
+        // Harvest P&L PDF export is Owner-only, whereas Daily Record sheet stays accessible for assigned worker
+        $this->actingAs($worker)->get(route('flocks.export-pdf', $flock))->assertForbidden();
+        $this->actingAs($owner)->get(route('flocks.export-pdf', $flock))->assertOk();
+        $this->actingAs($worker)->get(route('reports.daily-record', $flock))->assertOk();
+
+        // flocks/show exposes Daily Record button to worker while hiding financial cards & P&L export
+        $showResponse = $this->actingAs($worker)->get(route('flocks.show', $flock));
+        $showResponse->assertOk();
+        $showResponse->assertSee('Cetak Recording Harian');
+        $showResponse->assertDontSee('Proyeksi Finansial');
+        $showResponse->assertDontSee(route('flocks.export-pdf', $flock));
+    }
+
+    public function test_closed_flock_rejects_daily_records_and_feed_requests(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner']);
+        $worker = User::factory()->create(['role' => 'worker']);
+
+        $flock = Flock::create([
+            'name' => 'Kandang Tutup Buku',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-09-01',
+            'closed_at' => '2026-10-05',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+
+        $record = $flock->dailyRecords()->create([
+            'record_date' => '2026-09-10',
+            'mortality' => 2,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 20,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ]);
+
+        $pendingRequest = $flock->feedRequests()->create([
+            'feed_type' => 'Starter',
+            'amount_kg' => 100,
+            'status' => 'pending',
+        ]);
+
+        $shippedRequest = $flock->feedRequests()->create([
+            'feed_type' => 'Finisher',
+            'amount_kg' => 100,
+            'status' => 'shipped',
+        ]);
+
+        // View hides mutation forms/buttons on closed flock
+        $workerShow = $this->actingAs($worker)->get(route('flocks.show', $flock));
+        $workerShow->assertOk();
+        $workerShow->assertSee('Siklus Tutup Buku');
+        $workerShow->assertDontSee('+ Catat Harian');
+        $workerShow->assertDontSee('+ Minta Pakan');
+        $workerShow->assertDontSee('Terima Pakan');
+        $workerShow->assertDontSee('id="slide-over-title"', false);
+
+        // Controllers block all mutation endpoints with HTTP 403
+        $this->actingAs($worker)->get(route('daily_records.create', $flock))->assertForbidden();
+        $this->actingAs($worker)->postJson(route('daily_records.store', $flock), [
+            'record_date' => '2026-09-11',
+            'mortality' => 1,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 10,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertForbidden();
+        $this->actingAs($worker)->put(route('daily_records.update', $record), [
+            'record_date' => '2026-09-10',
+            'mortality' => 3,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 20,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+        ])->assertForbidden();
+        $this->actingAs($worker)->delete(route('daily_records.destroy', $record))->assertForbidden();
+
+        $this->actingAs($worker)->post(route('feed_requests.store', $flock), [
+            'feed_type' => 'Starter',
+            'amount_kg' => 50,
+        ])->assertForbidden();
+        $this->actingAs($owner)->post(route('feed_requests.ship', $pendingRequest))->assertForbidden();
+        $this->actingAs($worker)->post(route('feed_requests.receive', $shippedRequest))->assertForbidden();
+    }
 }

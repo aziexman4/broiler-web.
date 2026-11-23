@@ -74,25 +74,19 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `GET/PATCH/DELETE /profile` | `profile.{edit,update,destroy}` | `ProfileController` | `auth` |
 | `RESOURCE /flocks` | `flocks.*` | `FlockController` | `FlockPolicy` (`create`/`delete`: owner; `view`/`update`: owner or assigned worker) |
 | `GET /flocks/{flock}/export-csv` | `flocks.export-csv` | `ReportController@exportCsv` | `FlockPolicy@view` |
-| `GET /flocks/{flock}/export-pdf` | `flocks.export-pdf` | `HarvestController@exportPdf` | `FlockPolicy@view` |
 | `GET /flocks/{flock}/report/daily-record` | `reports.daily-record` | `ReportController@dailyRecordPreview` | `FlockPolicy@view` |
-| `GET /flocks/{flock}/daily-records/create` | `daily_records.create` | `DailyRecordController@create` | `FlockPolicy@update` |
-| `POST /flocks/{flock}/daily-records` | `daily_records.store` | `DailyRecordController@store` | `FlockPolicy@update` |
-| `PUT /daily-records/{dailyRecord}` | `daily_records.update` | `DailyRecordController@update` | `FlockPolicy@update` |
-| `DELETE /daily-records/{dailyRecord}` | `daily_records.destroy` | `DailyRecordController@destroy` | `FlockPolicy@update` |
+| `GET /my-payslips` | `worker.payslips.index` | `PayrollController@workerIndex` | `auth` (filters strictly by `user_id === auth()->id()`) |
+| `GET /payrolls/{payroll}/payslip` | `payrolls.payslip` | `PayrollController@payslipPreview` | `auth` + Ownership guard (`owner` OR `payroll->user_id === auth()->id()`) |
+| `GET /flocks/{flock}/daily-records/create` | `daily_records.create` | `DailyRecordController@create` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
+| `POST /flocks/{flock}/daily-records` | `daily_records.store` | `DailyRecordController@store` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
+| `PUT /daily-records/{dailyRecord}` | `daily_records.update` | `DailyRecordController@update` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
+| `DELETE /daily-records/{dailyRecord}` | `daily_records.destroy` | `DailyRecordController@destroy` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
 | `GET /flocks/{flock}/harvests/create` | `harvests.create` | `HarvestController@create` | `FlockPolicy@update` |
 | `POST /flocks/{flock}/harvests` | `harvests.store` | `HarvestController@store` | `FlockPolicy@update` |
 | `POST /flocks/{flock}/harvests/auto` | `harvests.auto` | `HarvestController@autoStore` | `FlockPolicy@update` |
-| `POST /flocks/{flock}/feed-requests` | `feed_requests.store` | `FeedRequestController@store` | `FlockPolicy@update` |
-| `POST /feed-requests/{feedRequest}/ship` | `feed_requests.ship` | `FeedRequestController@ship` | Inline `isOwner()` check (403) |
-| `POST /feed-requests/{feedRequest}/receive` | `feed_requests.receive` | `FeedRequestController@receive` | `FlockPolicy@update` |
-| `RESOURCE /feeds` & `GET /feed` | `feeds.*`, `feed.index` | `FeedInventoryController` | `auth` only *(no role check)* |
-| `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` | `auth` only *(no role check)* |
-| `RESOURCE /ovk` | `ovk.*` | `OvkController` | `auth` only *(no role check)* |
-| `RESOURCE /cash-flows` | `cash-flows.*` | `CashFlowController` | `auth` only *(no role check)* |
-| `RESOURCE /coops` (`only: index,store,update,destroy`) | `coops.{index,store,update,destroy}` | `CoopController` | `auth`, `can:manage-enterprise` |
-| `RESOURCE /workers` (`only: index,store,update,destroy`) | `workers.{index,store,update,destroy}` | `WorkerController` | `auth`, `can:manage-enterprise` |
-| `GET /activity-logs` | `activity_logs.index` | `ActivityLogController@index` | `auth`, `can:manage-enterprise` |
+| `POST /flocks/{flock}/feed-requests` | `feed_requests.store` | `FeedRequestController@store` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
+| `POST /feed-requests/{feedRequest}/ship` | `feed_requests.ship` | `FeedRequestController@ship` | Inline `isOwner()` check + `active` status guard (`403` when `closed`) |
+| `POST /feed-requests/{feedRequest}/receive` | `feed_requests.receive` | `FeedRequestController@receive` | `FlockPolicy@update` + `active` status guard (`403` when `closed`) |
 | `GET /reports/cash-flow` | `reports.cash-flow` | `ReportController@cashFlowPreview` | `auth`, `can:manage-enterprise` |
 | `GET /reports/inventory-audit` | `reports.inventory-audit` | `ReportController@inventoryAuditPreview` | `auth`, `can:manage-enterprise` |
 
@@ -100,6 +94,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 
 | HTTP & URI | Route Name | Controller@Method |
 | :--- | :--- | :--- |
+| `GET /flocks/{flock}/export-pdf` | `flocks.export-pdf` | `HarvestController@exportPdf` |
 | `POST /settings/update-price` | `settings.updatePrice` | `SystemSettingController@updatePrice` |
 | `RESOURCE /feeds` (`only: index,store`) & `GET /feed` | `feeds.{index,store}`, `feed.index` | `FeedInventoryController` |
 | `PATCH /feeds/{feed}/inline-update` | `feeds.inline-update` | `FeedInventoryController@inlineUpdate` |
@@ -113,7 +108,6 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `GET /analytics` | `analytics.index` | `AnalyticsController@index` |
 | `GET /financial-history` | `financial.history` | `HarvestController@index` |
 | `RESOURCE /payrolls` (`only: index,store`) | `payrolls.{index,store}` | `PayrollController` |
-| `GET /payrolls/{payroll}/payslip` | `payrolls.payslip` | `PayrollController@payslipPreview` |
 
 ---
 
@@ -141,6 +135,7 @@ Defined in `routes/web.php` and `routes/auth.php`.
 | `FeedInventoryController` | `index` | `feed.index` | `inventories`, `totalIn`, `totalOut`, `currentStock`, `activeFilterType`, `periodLabel`, `flocks` |
 | `AnalyticsController` | `index` | `analytics.index` | `analyticsData`, `farmAverages` |
 | `PayrollController` | `index` | `payrolls.index` | `workers`, `closedFlocks` (enriched with `worker_name`, `worker_base_salary`, `total_chickens_sold`, `total_weight_kg`, `total_feed_kg`, `harvest_age`, `achieved_fcr`, `achieved_ip`, `bonus_percentage`, `bonus_tier_label`, `recommended_bonus`), `payrolls` |
+| `PayrollController` | `workerIndex` | `payrolls.worker-index` | `payrolls` (filtered by authenticated user's `user_id`) |
 | `PayrollController` | `payslipPreview` | `reports.payslip-preview` | `payroll`, `coop` |
 | `OvkController` | `index` | `ovk.index` | `records`, `totalSpending` |
 | `CashFlowController` | `index` | `cash_flows.index` | `records`, `total_in`, `total_out`, `balance`, `activeFilterType`, `periodLabel` |

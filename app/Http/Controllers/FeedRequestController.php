@@ -13,6 +13,7 @@ class FeedRequestController extends Controller
     public function store(Request $request, Flock $flock)
     {
         Gate::authorize('update', $flock);
+        $this->ensureFlockIsActive($flock);
 
         $validated = $request->validate([
             'feed_type' => 'required|string|in:Pre-Starter,Starter,Finisher',
@@ -29,11 +30,25 @@ class FeedRequestController extends Controller
         return back()->with('success', 'Permintaan pakan berhasil dikirim ke Pemilik.');
     }
 
+    /**
+     * Reject feed request actions when a flock cycle has been closed.
+     */
+    private function ensureFlockIsActive(Flock $flock): void
+    {
+        abort_if(
+            $flock->status === 'closed',
+            403,
+            'Siklus kandang sudah ditutup (Closed). Permintaan dan penerimaan pakan tidak dapat diproses lagi.'
+        );
+    }
+
     public function ship(FeedRequest $feedRequest)
     {
         if (!auth()->user()->isOwner()) {
             abort(403, 'Hanya Pemilik yang dapat menyetujui pengiriman.');
         }
+
+        $this->ensureFlockIsActive($feedRequest->flock);
 
         FeedInventory::create([
             'transaction_date' => now(),
@@ -52,6 +67,7 @@ class FeedRequestController extends Controller
     public function receive(FeedRequest $feedRequest)
     {
         Gate::authorize('update', $feedRequest->flock);
+        $this->ensureFlockIsActive($feedRequest->flock);
 
         if ($feedRequest->status !== 'shipped') {
             abort(400, 'Status tidak valid.');

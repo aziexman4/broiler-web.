@@ -121,10 +121,33 @@ class PayrollController extends Controller
     }
 
     /**
+     * Display the authenticated worker's own payroll and IP bonus history.
+     */
+    public function workerIndex(Request $request)
+    {
+        $user = $request->user();
+
+        $payrolls = Payroll::with(['user', 'flock.coop'])
+            ->where('user_id', $user->id)
+            ->orderBy('payment_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return view('payrolls.worker-index', compact('payrolls'));
+    }
+
+    /**
      * Preview Payslip as printable HTML.
      */
     public function payslipPreview(Payroll $payroll)
     {
+        $user = auth()->user();
+        abort_if(
+            !$user->isOwner() && (int) $payroll->user_id !== (int) $user->id,
+            403,
+            'Anda tidak memiliki izin mengakses slip gaji pekerja lain.'
+        );
+
         $payroll->load(['user', 'flock.coop']);
         $coop = $payroll->flock?->coop;
 

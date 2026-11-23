@@ -51,12 +51,20 @@
                         </a>
                     </div>
                 </div>
+                @else
+                <a href="{{ route('reports.daily-record', $flock) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 border border-transparent rounded-xl font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-500 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                    📋 Cetak Recording Harian
+                </a>
                 @endif
 
                 @if($flock->status === 'active')
                 <button @click="$dispatch('open-slide-over')" type="button" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">
                     + Catat Harian
                 </button>
+                @else
+                <span class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                    🔒 Siklus Tutup Buku
+                </span>
                 @endif
             </div>
         </div>
@@ -409,14 +417,14 @@
                                             @endif
                                         </td>
                                         <td class="py-3 px-4 text-right">
-                                            @if($request->status === 'pending' && Auth::user()->isOwner())
+                                            @if($flock->status === 'active' && $request->status === 'pending' && Auth::user()->isOwner())
                                                 <form action="{{ route('feed_requests.ship', $request) }}" method="POST" class="inline-block">
                                                     @csrf
                                                     <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded shadow transition" onclick="return confirm('Setujui dan kirim pakan ini ke kandang?')">
                                                         Setujui & Kirim
                                                     </button>
                                                 </form>
-                                            @elseif($request->status === 'shipped' && !Auth::user()->isOwner())
+                                            @elseif($flock->status === 'active' && $request->status === 'shipped' && !Auth::user()->isOwner())
                                                 <form action="{{ route('feed_requests.receive', $request) }}" method="POST" class="inline-block">
                                                     @csrf
                                                     <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded shadow transition pulse-animation">
@@ -425,6 +433,8 @@
                                                 </form>
                                             @elseif($request->status === 'completed')
                                                 <span class="text-xs text-slate-500 font-medium">Selesai</span>
+                                            @elseif($flock->status !== 'active')
+                                                <span class="text-xs text-slate-400 font-medium">Terkunci</span>
                                             @else
                                                 <span class="text-xs text-slate-400 font-medium">-</span>
                                             @endif
@@ -497,6 +507,7 @@
                 </div>
 
             </div>
+        @if($flock->status === 'active')
         <!-- Slide-Over Panel Form -->
         <div x-show="openPanel" class="fixed inset-0 z-50 overflow-hidden" x-cloak style="display: none;">
             <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity" @click="openPanel = false"
@@ -648,6 +659,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- Alpine Component Logic -->
         <script>
