@@ -211,7 +211,11 @@
                                                         Lihat Detail &rarr;
                                                     </a>
                                                     @can('manage-enterprise')
-                                                        <form action="{{ route('flocks.destroy', $flock) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus siklus kandang ini?');">
+                                                        <form action="{{ route('flocks.destroy', $flock) }}" method="POST" class="inline"
+                                                              data-confirm-title="Hapus Siklus Kandang?"
+                                                              data-confirm-message="Apakah Anda yakin ingin menghapus siklus kandang ini?"
+                                                              data-confirm-button="Ya, Hapus Siklus"
+                                                              data-confirm-tone="danger">
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="inline-flex items-center px-2.5 py-1 bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/70 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded border border-rose-200 dark:border-rose-800 transition-colors">

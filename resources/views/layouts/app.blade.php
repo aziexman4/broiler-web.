@@ -215,10 +215,84 @@
             </div>
         </div>
 
+        <!-- Global Alpine Confirmation Modal -->
+        <div x-data="confirmDialog()"
+             @open-confirm-dialog.window="open($event.detail)"
+             @keydown.escape.window="if (isOpen) cancel()"
+             x-show="isOpen"
+             x-cloak
+             style="display: none;"
+             class="fixed inset-0 z-[60] overflow-y-auto"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="confirm-dialog-title">
+            <div class="flex min-h-screen items-center justify-center p-4 text-center">
+                <div x-show="isOpen"
+                     x-transition:enter="ease-out duration-200"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-150"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     @click="cancel()"
+                     class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+
+                <div x-show="isOpen"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 text-left shadow-2xl border border-slate-200 dark:border-slate-800 transition-all w-full max-w-md p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center"
+                             :class="{
+                                 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400': tone === 'danger',
+                                 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400': tone === 'emerald',
+                                 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400': tone === 'primary'
+                             }">
+                            <svg x-show="tone === 'danger'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <svg x-show="tone !== 'danger'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <h3 id="confirm-dialog-title" class="text-base font-bold text-slate-900 dark:text-slate-100" x-text="title"></h3>
+                            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed" x-text="message"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-end gap-2.5">
+                        <button type="button"
+                                x-ref="cancelButton"
+                                @click="cancel()"
+                                class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
+                            Batal
+                        </button>
+                        <button type="button"
+                                x-ref="confirmButton"
+                                @click="confirm()"
+                                :class="{
+                                    'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500': tone === 'danger',
+                                    'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500': tone === 'emerald',
+                                    'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500': tone === 'primary'
+                                }"
+                                class="px-4 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                                x-text="confirmText">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Global Toast Manager -->
         <div x-data="toastManager()" 
              @notify.window="add($event.detail)"
-             class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+             class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-[calc(100vw-2rem)]">
             
             <template x-for="toast in toasts" :key="toast.id">
                 <div x-show="toast.visible" 
@@ -228,7 +302,7 @@
                      x-transition:leave="transition ease-in duration-200"
                      x-transition:leave-start="opacity-100 translate-x-0"
                      x-transition:leave-end="opacity-0 translate-x-4"
-                     class="flex items-center p-4 w-full max-w-xs text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700" 
+                     class="pointer-events-auto flex items-center p-4 w-full sm:w-80 text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700" 
                      role="alert">
                     
                     <!-- Icon based on type -->
@@ -244,9 +318,9 @@
                         <svg x-show="toast.type === 'warning' || toast.type === 'info'" class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"><path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM10 15a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm1-4a1 1 0 0 1-2 0V6a1 1 0 0 1 2 0v5Z"/></svg>
                     </div>
                     
-                    <div class="ms-3 text-sm font-medium text-slate-800 dark:text-slate-200" x-text="toast.message"></div>
+                    <div class="ms-3 text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug" x-text="toast.message"></div>
                     
-                    <button @click="remove(toast.id)" type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl focus:ring-2 focus:ring-gray-300 dark:focus:ring-slate-600 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 inline-flex items-center justify-center h-8 w-8 transition-colors" aria-label="Close">
+                    <button @click="remove(toast.id)" type="button" class="ms-auto -mx-1.5 -my-1.5 bg-white dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl focus:ring-2 focus:ring-gray-300 dark:focus:ring-slate-600 p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 inline-flex items-center justify-center h-8 w-8 transition-colors flex-shrink-0" aria-label="Tutup notifikasi">
                         <span class="sr-only">Close</span>
                         <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
@@ -257,11 +331,77 @@
         </div>
 
         <script>
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                if (!form.dataset.confirmMessage || form.dataset.confirmed === 'true') return;
+
+                event.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-confirm-dialog', {
+                    detail: {
+                        form,
+                        title: form.dataset.confirmTitle || 'Konfirmasi Aksi',
+                        message: form.dataset.confirmMessage,
+                        confirmText: form.dataset.confirmButton || 'Ya, Lanjutkan',
+                        tone: form.dataset.confirmTone || 'danger',
+                    }
+                }));
+            });
+
             document.addEventListener('alpine:init', () => {
+                Alpine.data('confirmDialog', () => ({
+                    isOpen: false,
+                    title: 'Konfirmasi Aksi',
+                    message: '',
+                    confirmText: 'Ya, Lanjutkan',
+                    tone: 'danger',
+                    pendingForm: null,
+
+                    open(detail) {
+                        this.pendingForm = detail.form || null;
+                        this.title = detail.title || 'Konfirmasi Aksi';
+                        this.message = detail.message || 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
+                        this.confirmText = detail.confirmText || 'Ya, Lanjutkan';
+                        this.tone = detail.tone || 'danger';
+                        this.isOpen = true;
+
+                        this.$nextTick(() => {
+                            if (this.tone === 'danger' && this.$refs.cancelButton) {
+                                this.$refs.cancelButton.focus();
+                            } else if (this.$refs.confirmButton) {
+                                this.$refs.confirmButton.focus();
+                            }
+                        });
+                    },
+
+                    cancel() {
+                        this.isOpen = false;
+                        this.pendingForm = null;
+                    },
+
+                    confirm() {
+                        const form = this.pendingForm;
+                        this.isOpen = false;
+                        this.pendingForm = null;
+
+                        if (form) {
+                            form.dataset.confirmed = 'true';
+                            HTMLFormElement.prototype.submit.call(form);
+                        }
+                    }
+                }));
+
                 Alpine.data('toastManager', () => ({
                     toasts: [],
+                    nextId: 0,
                     add(toast) {
-                        const id = Date.now();
+                        if (!toast || !toast.message) return;
+                        const id = ++this.nextId;
+
+                        if (this.toasts.length >= 4) {
+                            this.toasts.shift();
+                        }
+
                         this.toasts.push({
                             id: id,
                             message: toast.message,
@@ -271,7 +411,7 @@
                         
                         setTimeout(() => {
                             this.remove(id);
-                        }, toast.duration || 3000);
+                        }, toast.duration || 3500);
                     },
                     remove(id) {
                         const toast = this.toasts.find(t => t.id === id);
@@ -286,12 +426,22 @@
                         // Check for Laravel session flashes
                         @if(session('success'))
                             setTimeout(() => {
-                                this.add({ message: '{{ addslashes(session('success')) }}', type: 'success' });
+                                this.add({ message: @js(session('success')), type: 'success' });
                             }, 100);
                         @endif
                         @if(session('error'))
                             setTimeout(() => {
-                                this.add({ message: '{{ addslashes(session('error')) }}', type: 'error' });
+                                this.add({ message: @js(session('error')), type: 'error' });
+                            }, 100);
+                        @endif
+                        @if(session('warning'))
+                            setTimeout(() => {
+                                this.add({ message: @js(session('warning')), type: 'warning' });
+                            }, 100);
+                        @endif
+                        @if(session('info'))
+                            setTimeout(() => {
+                                this.add({ message: @js(session('info')), type: 'info' });
                             }, 100);
                         @endif
                     }

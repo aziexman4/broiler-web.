@@ -34,7 +34,7 @@
             this.editFormAction = worker.update_url;
             this.editModalOpen = true;
         }
-    }">
+    }" @keydown.escape.window="editModalOpen = false">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <!-- Error Alert Notification -->
@@ -201,7 +201,11 @@
                                                     ✏️ Edit
                                                 </button>
 
-                                                <form action="{{ route('workers.destroy', $worker) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin memberhentikan dan menghapus akun pekerja ini?');">
+                                                <form action="{{ route('workers.destroy', $worker) }}" method="POST" class="inline"
+                                                      data-confirm-title="Hapus Akun Pekerja?"
+                                                      data-confirm-message="Apakah Anda yakin ingin memberhentikan dan menghapus akun pekerja ini?"
+                                                      data-confirm-button="Ya, Hapus Akun"
+                                                      data-confirm-tone="danger">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/70 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-xl transition-colors border border-rose-200 dark:border-rose-800">

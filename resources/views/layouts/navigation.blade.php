@@ -1,3 +1,22 @@
+@php
+    $navActiveFlocksCount = 0;
+    $navPendingFeedCount = 0;
+    if (Auth::check()) {
+        try {
+            $navUser = Auth::user();
+            $navActiveFlocksCount = $navUser->isOwner()
+                ? \App\Models\Flock::where('status', 'active')->count()
+                : \App\Models\Flock::where('status', 'active')->where('worker_id', $navUser->id)->count();
+            if ($navUser->isOwner()) {
+                $navPendingFeedCount = \App\Models\FeedRequest::where('status', 'pending')->count();
+            }
+        } catch (\Throwable $e) {
+            $navActiveFlocksCount = 0;
+            $navPendingFeedCount = 0;
+        }
+    }
+@endphp
+
 <!-- Desktop Sidebar -->
 <aside class="hidden md:flex md:flex-col md:w-64 bg-slate-900 text-slate-300 border-r border-slate-800 flex-shrink-0">
     <!-- Sidebar Header / Branding -->
@@ -32,7 +51,12 @@
                     <svg class="w-5 h-5 me-3 text-slate-400 {{ request()->routeIs('flocks.*') ? 'text-white' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
-                    Daftar Kandang
+                    <span>Daftar Kandang</span>
+                    @if($navActiveFlocksCount > 0)
+                        <span title="{{ $navActiveFlocksCount }} siklus kandang aktif" class="ms-auto px-2 py-0.5 text-[10px] font-bold rounded-full {{ request()->routeIs('flocks.*') ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' }}">
+                            {{ $navActiveFlocksCount }}
+                        </span>
+                    @endif
                 </a>
 
                 <!-- Gudang Pakan (Owner) -->
@@ -42,7 +66,12 @@
                         <svg class="w-5 h-5 me-3 text-slate-400 {{ request()->routeIs('feeds.*') ? 'text-white' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
-                        Stok Gudang Pakan
+                        <span>Stok Gudang Pakan</span>
+                        @if($navPendingFeedCount > 0)
+                            <span title="{{ $navPendingFeedCount }} permintaan pakan menunggu persetujuan" class="ms-auto px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-400 text-slate-950 animate-pulse">
+                                {{ $navPendingFeedCount }} pending
+                            </span>
+                        @endif
                     </a>
                 @endif
 
@@ -206,13 +235,23 @@
                 </a>
                 <a href="{{ route('flocks.index') }}" 
                    class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('flocks.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
-                    Daftar Kandang
+                    <span>Daftar Kandang</span>
+                    @if($navActiveFlocksCount > 0)
+                        <span class="ms-auto px-2 py-0.5 text-[10px] font-bold rounded-full {{ request()->routeIs('flocks.*') ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' }}">
+                            {{ $navActiveFlocksCount }}
+                        </span>
+                    @endif
                 </a>
 
                 @if(Auth::user()->isOwner())
                     <a href="{{ route('feed.index') }}" 
-                       class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('feed.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
-                        Stok Gudang Pakan
+                       class="flex items-center px-3 py-2.5 rounded-xl text-sm font-medium {{ request()->routeIs('feed.*') || request()->routeIs('feeds.*') ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800' }}">
+                        <span>Stok Gudang Pakan</span>
+                        @if($navPendingFeedCount > 0)
+                            <span class="ms-auto px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-400 text-slate-950 animate-pulse">
+                                {{ $navPendingFeedCount }} pending
+                            </span>
+                        @endif
                     </a>
                 @endif
 

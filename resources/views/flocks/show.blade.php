@@ -350,7 +350,12 @@
                                         </td>
                                         <td class="py-3 px-4 text-right">
                                             @if($flock->status === 'active')
-                                            <form action="{{ route('daily_records.destroy', $record) }}" method="POST" onsubmit="return confirm('Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang.');" class="inline">
+                                            <form action="{{ route('daily_records.destroy', $record) }}" method="POST"
+                                                  data-confirm-title="Hapus Catatan Harian?"
+                                                  data-confirm-message="Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang."
+                                                  data-confirm-button="Ya, Hapus"
+                                                  data-confirm-tone="danger"
+                                                  class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 px-2 py-1 rounded text-xs font-semibold transition-colors">
@@ -436,9 +441,13 @@
                                         </td>
                                         <td class="py-3 px-4 text-right">
                                             @if($flock->status === 'active' && $request->status === 'pending' && Auth::user()->isOwner())
-                                                <form action="{{ route('feed_requests.ship', $request) }}" method="POST" class="inline-block">
+                                                <form action="{{ route('feed_requests.ship', $request) }}" method="POST" class="inline-block"
+                                                      data-confirm-title="Setujui & Kirim Pakan?"
+                                                      data-confirm-message="Setujui permintaan pakan ini dan kirimkan stok ke gudang kandang?"
+                                                      data-confirm-button="Ya, Kirim Pakan"
+                                                      data-confirm-tone="primary">
                                                     @csrf
-                                                    <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded shadow transition" onclick="return confirm('Setujui dan kirim pakan ini ke kandang?')">
+                                                    <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded shadow transition">
                                                         Setujui & Kirim
                                                     </button>
                                                 </form>
@@ -475,7 +484,11 @@
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Catatan hasil panen dan pendapatan</p>
                             </div>
                             @if(Auth::user()->isOwner() && $flock->status === 'active')
-                            <form action="{{ route('harvests.auto', $flock) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin memanen kandang ini sekarang? Data laba-rugi akan dikalkulasi secara otomatis berdasarkan proyeksi harian terakhir.');">
+                            <form action="{{ route('harvests.auto', $flock) }}" method="POST" class="inline"
+                                  data-confirm-title="Panen Kandang Sekarang?"
+                                  data-confirm-message="Apakah Anda yakin ingin memanen kandang ini sekarang? Data laba-rugi akan dikalkulasi secara otomatis berdasarkan proyeksi harian terakhir."
+                                  data-confirm-button="Ya, Proses Panen"
+                                  data-confirm-tone="emerald">
                                 @csrf
                                 <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg text-xs font-bold hover:from-emerald-600 hover:to-green-700 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
@@ -774,7 +787,7 @@
                                     <td class="py-3 px-4">${statusBadge}</td>
                                     <td class="py-3 px-4 text-right">
                                         ${ '{{ $flock->status }}' === 'active' ? `
-                                        <form action="/daily-records/${record.id}" method="POST" onsubmit="return confirm('Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang.');" class="inline">
+                                        <form action="/daily-records/${record.id}" method="POST" data-confirm-title="Hapus Catatan Harian?" data-confirm-message="Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang." data-confirm-button="Ya, Hapus" data-confirm-tone="danger" class="inline">
                                             <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="_method" value="DELETE">
                                             <button type="submit" class="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 px-2 py-1 rounded text-xs font-semibold transition-colors">
@@ -877,7 +890,12 @@
                         mainInput.value = finalResult;
                         mainInput.dispatchEvent(new Event('input', { bubbles: true }));
                         
-                        alert('⚖️ Timbangan berhasil disalin: ' + finalResult + ' Gram');
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: '⚖️ Timbangan berhasil disalin: ' + finalResult + ' Gram/Ekor',
+                                type: 'success'
+                            }
+                        }));
                         
                         const originalBg = mainInput.style.backgroundColor;
                         mainInput.style.transition = 'background-color 0.5s ease';
