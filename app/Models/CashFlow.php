@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Traits\FiltersByPeriod;
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
 class CashFlow extends Model
 {
-    use HasFactory, FiltersByPeriod;
+    use HasFactory, FiltersByPeriod, LogsActivity;
 
     /**
      * The table associated with the model.

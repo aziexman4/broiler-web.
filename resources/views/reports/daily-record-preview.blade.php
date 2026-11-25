@@ -4,6 +4,7 @@
 @endphp
 @extends('layouts.print', [
     'coop' => $unitCoop,
+    'pdfDownloadUrl' => route('reports.daily-record', ['flock' => $flock, 'download' => 1]),
     'leftSignerPrefix' => 'Dibuat Oleh,',
     'leftSignerRole' => 'Pekerja / Penanggung Jawab Kandang',
     'leftSignerName' => $workerSigner,

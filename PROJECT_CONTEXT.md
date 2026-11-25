@@ -20,7 +20,7 @@
   - **Roles**: Lowercase strings `'owner'` and `'worker'` stored in `users.role` (`User::isOwner()`, `User::isWorker()`).
   - **Enterprise Gate**: `Gate::define('manage-enterprise', fn(User $user) => $user->role === 'owner')` in `app/Providers/AppServiceProvider.php`.
   - **Flock Policy**: `app/Policies/FlockPolicy.php` — `create`/`delete` require `owner`; `view`/`update`/`manageDailyRecords` allow `owner` OR assigned worker (`$user->id === $flock->worker_id`).
-  - **Audit Trail**: `app/Traits/LogsActivity.php` attached to `Flock`, `DailyRecord`, and `FeedInventory` (logs `created`, `updated` with `before`/`after` JSON diff, `deleted` to `activity_logs` when `Auth::check()` is true).
+  - **Audit Trail**: `app/Traits/LogsActivity.php` attached to `Flock`, `DailyRecord`, `FeedInventory`, `Harvest`, `Payroll`, `CashFlow`, `OvkInventory`, `Coop`, and `FeedRequest` (logs `created`, `updated` with `before`/`after` JSON diff, `deleted` to `activity_logs` when `Auth::check()` is true).
 
 ---
 
@@ -202,6 +202,10 @@ Defined in `routes/web.php` and `routes/auth.php`.
    - `DailyRecordController` (`store`, `update`, `destroy`) runs atomically inside `DB::transaction`, enforces `record_date >= flock.start_date`, rejects duplicate dates per flock and cumulative `mortality + culling > initial_population`, and reverts auto-deducted `FeedInventory` `'out'` records upon update/delete.
    - Public self-registration (`/register`) is controlled via `config('app.allow_public_registration')` (`ALLOW_PUBLIC_REGISTRATION`, `false` by default in web/production; `true` in `phpunit.xml`).
    - `OvkController@store` and `FeedInventoryController@store` enforce non-negative warehouse stock on `'out'` transactions and support optional automatic `CashFlow` `'out'` journaling via `sync_cash_flow`.
-   - Transaction histories (`FeedInventory`, `CashFlow`, `Ovk`, `Payroll`) paginate at 20 rows (`withQueryString()`), while `?download=1` on `flocks.export-pdf` and `payrolls.payslip` generates A4 `.pdf` files via `barryvdh/laravel-dompdf`.
+   - Transaction histories (`FeedInventory`, `CashFlow`, `Ovk`, `Payroll`) paginate at 20 rows (`withQueryString()`), while `?download=1` on all 5 A4 reports (`flocks.export-pdf`, `payrolls.payslip`, `reports.daily-record`, `reports.cash-flow`, `reports.inventory-audit`) generates A4 `.pdf` files via `barryvdh/laravel-dompdf`.
+13. **Form Alignment, Profile Safe Delete & Extended Audit Trail**:
+   - `daily_records/create.blade.php` matches `DailyRecordController@store` (`feed_pre_starter_kg`, `feed_starter_kg`, `feed_finisher_kg`, `average_weight_gram`) and displays current flock phase feed stocks with `dark:*` styling.
+   - `ProfileController@destroy` (`DELETE /profile`) rejects Owner accounts and Workers with existing `payrolls`, `flocks`, or `dailyRecords` history.
+   - `LogsActivity` trait covers `Flock`, `DailyRecord`, `FeedInventory`, `Harvest`, `Payroll`, `CashFlow`, `OvkInventory`, `Coop`, and `FeedRequest`; `ActivityLogController@index` wraps search predicates in a grouped closure and renders full `dark:*` views.
 
 

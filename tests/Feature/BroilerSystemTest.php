@@ -968,4 +968,91 @@ class BroilerSystemTest extends TestCase
         $payslipPdf->assertOk();
         $this->assertStringStartsWith('%PDF-', $payslipPdf->getContent());
     }
+
+    public function test_daily_records_create_form_profile_guards_audit_logs_and_remaining_a4_pdfs(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Owner Audit']);
+        $workerWithHistory = User::factory()->create(['role' => 'worker', 'name' => 'Worker Riwayat']);
+        $cleanWorker = User::factory()->create(['role' => 'worker', 'name' => 'Worker Clean']);
+
+        $coop = Coop::create([
+            'name' => 'Kandang A4 Test',
+            'address' => 'Hanau',
+            'manager_name' => 'Owner Audit',
+            'is_headquarters' => true,
+        ]);
+
+        $flock = Flock::create([
+            'coop_id' => $coop->id,
+            'name' => 'Flock Form & PDF',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-11-01',
+            'initial_population' => 1000,
+            'stock_pre_starter_kg' => 100,
+            'status' => 'active',
+            'worker_id' => $workerWithHistory->id,
+        ]);
+
+        // 1. daily_records/create renders 3-phase feed inputs & submits cleanly
+        $createPage = $this->actingAs($workerWithHistory)->get(route('daily_records.create', $flock));
+        $createPage->assertOk();
+        $createPage->assertSee('feed_pre_starter_kg');
+        $createPage->assertSee('feed_starter_kg');
+        $createPage->assertSee('feed_finisher_kg');
+        $createPage->assertSee('average_weight_gram');
+        $createPage->assertDontSee('feed_consumed_kg');
+
+        $this->actingAs($workerWithHistory)->post(route('daily_records.store', $flock), [
+            'record_date' => '2026-11-02',
+            'mortality' => 2,
+            'culling' => 1,
+            'feed_pre_starter_kg' => 15,
+            'feed_starter_kg' => 0,
+            'feed_finisher_kg' => 0,
+            'average_weight_gram' => 65,
+        ])->assertRedirect(route('flocks.show', $flock));
+
+        // 2. ProfileController@destroy blocks owner & worker with history, allows clean worker
+        $this->actingAs($owner)->from('/profile')->delete('/profile', ['password' => 'password'])
+            ->assertRedirect('/profile')
+            ->assertSessionHasErrorsIn('userDeletion', 'password');
+        $this->assertDatabaseHas('users', ['id' => $owner->id]);
+
+        $this->actingAs($workerWithHistory)->from('/profile')->delete('/profile', ['password' => 'password'])
+            ->assertRedirect('/profile')
+            ->assertSessionHasErrorsIn('userDeletion', 'password');
+        $this->assertDatabaseHas('users', ['id' => $workerWithHistory->id]);
+
+        $this->actingAs($cleanWorker)->delete('/profile', ['password' => 'password'])
+            ->assertRedirect('/');
+        $this->assertDatabaseMissing('users', ['id' => $cleanWorker->id]);
+
+        // 3. Extended LogsActivity + grouped ActivityLogController search
+        $this->actingAs($owner)->post(route('cash-flows.store'), [
+            'transaction_date' => '2026-11-03',
+            'description' => 'Pembelian Sekam Audit',
+            'type' => 'out',
+            'amount' => 350000,
+        ])->assertRedirect(route('cash-flows.index'));
+
+        $this->assertDatabaseHas('activity_logs', ['model_type' => 'CashFlow', 'action' => 'created']);
+        $this->assertDatabaseHas('activity_logs', ['model_type' => 'DailyRecord', 'action' => 'created']);
+
+        $logsResponse = $this->actingAs($owner)->get(route('activity_logs.index', ['search' => 'CashFlow']));
+        $logsResponse->assertOk();
+        $logsResponse->assertSee('CashFlow');
+
+        // 4. All 3 remaining A4 reports support direct ?download=1 DomPDF binary export
+        $dailyPdf = $this->actingAs($workerWithHistory)->get(route('reports.daily-record', ['flock' => $flock, 'download' => 1]));
+        $dailyPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $dailyPdf->getContent());
+
+        $cashFlowPdf = $this->actingAs($owner)->get(route('reports.cash-flow', ['download' => 1]));
+        $cashFlowPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $cashFlowPdf->getContent());
+
+        $auditPdf = $this->actingAs($owner)->get(route('reports.inventory-audit', ['download' => 1]));
+        $auditPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $auditPdf->getContent());
+    }
 }

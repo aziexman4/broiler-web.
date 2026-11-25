@@ -1,4 +1,7 @@
-@extends('layouts.print', ['coop' => $coop ?? null])
+@extends('layouts.print', [
+    'coop' => $coop ?? null,
+    'pdfDownloadUrl' => route('reports.inventory-audit', array_merge(request()->only(['filter_mode', 'month', 'start_date', 'end_date']), ['download' => 1])),
+])
 
 @section('title', 'Laporan Audit Mutasi Gudang Pakan')
 

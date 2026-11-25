@@ -38,7 +38,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Delete the user's account if safe to remove without breaking historical integrity.
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -47,6 +47,22 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        if ($user->isOwner()) {
+            return Redirect::route('profile.edit')
+                ->withErrors([
+                    'password' => 'Akun Pemilik (Owner) tidak dapat dihapus melalui halaman profil demi menjaga otoritas akses sistem.',
+                ], 'userDeletion')
+                ->with('error', 'Akun Pemilik (Owner) tidak dapat dihapus melalui halaman profil.');
+        }
+
+        if ($user->payrolls()->exists() || $user->flocks()->exists() || $user->dailyRecords()->exists()) {
+            return Redirect::route('profile.edit')
+                ->withErrors([
+                    'password' => 'Akun tidak dapat dihapus karena masih terhubung dengan riwayat kandang, catatan harian, atau slip gaji.',
+                ], 'userDeletion')
+                ->with('error', 'Akun tidak dapat dihapus karena masih memiliki riwayat operasional atau payroll.');
+        }
 
         Auth::logout();
 

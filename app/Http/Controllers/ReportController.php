@@ -101,9 +101,9 @@ class ReportController extends Controller
     }
 
     /**
-     * Preview Daily Record Sheet as printable HTML.
+     * Preview Daily Record Sheet as printable HTML or download as PDF.
      */
-    public function dailyRecordPreview(Flock $flock)
+    public function dailyRecordPreview(Request $request, Flock $flock)
     {
         Gate::authorize('view', $flock);
 
@@ -117,20 +117,27 @@ class ReportController extends Controller
         $totalFeed = $totalFeedLegacy > 0 ? $totalFeedLegacy : $totalFeedPhased;
         $livePopulation = max(0, $flock->initial_population - $totalMortality);
 
-        return view('reports.daily-record-preview', compact(
-            'flock', 'coop', 'dailyRecords', 'totalMortality', 'totalFeed', 'livePopulation'
-        ));
+        $viewData = compact('flock', 'coop', 'dailyRecords', 'totalMortality', 'totalFeed', 'livePopulation');
+
+        if ($request->boolean('download')) {
+            $filename = 'recording_harian_' . Str::slug($flock->name) . '_' . date('Y-m-d') . '.pdf';
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.daily-record-preview', $viewData + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download($filename);
+        }
+
+        return view('reports.daily-record-preview', $viewData);
     }
 
     /**
-     * Preview Cash Flow Statement as printable HTML.
+     * Preview Cash Flow Statement as printable HTML or download as PDF.
      */
     public function cashFlowPreview(Request $request)
     {
         $coop = Coop::where('is_headquarters', true)->first();
         $summary = CashFlow::getFilteredSummary($request);
 
-        return view('reports.cashflow-preview', [
+        $viewData = [
             'coop' => $coop,
             'records' => $summary['records'],
             'total_in' => $summary['total_in'],
@@ -138,18 +145,27 @@ class ReportController extends Controller
             'balance' => $summary['balance'],
             'activeFilterType' => $summary['activeFilterType'],
             'periodLabel' => $summary['periodLabel'],
-        ]);
+        ];
+
+        if ($request->boolean('download')) {
+            $filename = 'laporan_arus_kas_' . date('Y-m-d') . '.pdf';
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.cashflow-preview', $viewData + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download($filename);
+        }
+
+        return view('reports.cashflow-preview', $viewData);
     }
 
     /**
-     * Preview Inventory Audit Report as printable HTML.
+     * Preview Inventory Audit Report as printable HTML or download as PDF.
      */
     public function inventoryAuditPreview(Request $request)
     {
         $coop = Coop::where('is_headquarters', true)->first();
         $summary = FeedInventory::getFilteredSummary($request);
 
-        return view('reports.inventory-audit-preview', [
+        $viewData = [
             'coop' => $coop,
             'records' => $summary['records'],
             'totalIn' => $summary['totalIn'],
@@ -157,6 +173,15 @@ class ReportController extends Controller
             'totalValue' => $summary['totalValue'],
             'activeFilterType' => $summary['activeFilterType'],
             'periodLabel' => $summary['periodLabel'],
-        ]);
+        ];
+
+        if ($request->boolean('download')) {
+            $filename = 'laporan_audit_pakan_' . date('Y-m-d') . '.pdf';
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.inventory-audit-preview', $viewData + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download($filename);
+        }
+
+        return view('reports.inventory-audit-preview', $viewData);
     }
 }
