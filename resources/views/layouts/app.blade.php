@@ -148,10 +148,10 @@
                     <!-- Global Credit Footer -->
                     <footer class="mt-auto py-6 px-6 sm:px-8 text-center sm:text-right border-t border-slate-200/60 dark:border-slate-800/60 mt-8">
                         <p class="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
-                            Sistem P2MW 2026
+                            Sistem Manajemen Peternakan Broiler &bull; Proyek PKL {{ date('Y') }}
                         </p>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                            Dikembangkan oleh <span class="font-bold text-slate-700 dark:text-slate-300">M Aulia Aziz 2310020119</span>
+                            Dikembangkan oleh <span class="font-bold text-slate-700 dark:text-slate-300">M Aulia Aziz 2310020119</span> — FTI UNISKA Banjarmasin
                         </p>
                     </footer>
                 </main>

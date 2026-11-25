@@ -47,7 +47,7 @@
 
             <!-- Footer Quote -->
             <div class="relative z-10 text-slate-500 text-sm font-medium">
-                Sistem P2MW Terintegrasi &copy; {{ date('Y') }}
+                Sistem Manajemen Peternakan Broiler (PKL) &copy; {{ date('Y') }}
             </div>
         </div>
 

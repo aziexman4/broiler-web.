@@ -67,7 +67,7 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                 </span>
-                Proyek Inovasi P2MW 2026
+                Proyek Praktik Kerja Lapangan (PKL) 2026
             </div>
             
             <h1 class="font-heading text-5xl sm:text-7xl font-extrabold tracking-tight text-white mb-8 leading-tight">
@@ -109,7 +109,7 @@
         <div class="flex space-x-12 animate-marquee whitespace-nowrap items-center opacity-70">
             <!-- Set 1 -->
             <div class="flex space-x-12 items-center">
-                <span class="text-xl font-bold text-slate-400">Laravel 11</span>
+                <span class="text-xl font-bold text-slate-400">Laravel 13.8</span>
                 <span class="text-xl font-bold text-slate-400">&bull;</span>
                 <span class="text-xl font-bold text-slate-400">TailwindCSS</span>
                 <span class="text-xl font-bold text-slate-400">&bull;</span>
@@ -122,7 +122,7 @@
             </div>
             <!-- Set 2 (Duplicate for infinite scroll) -->
             <div class="flex space-x-12 items-center">
-                <span class="text-xl font-bold text-slate-400">Laravel 11</span>
+                <span class="text-xl font-bold text-slate-400">Laravel 13.8</span>
                 <span class="text-xl font-bold text-slate-400">&bull;</span>
                 <span class="text-xl font-bold text-slate-400">TailwindCSS</span>
                 <span class="text-xl font-bold text-slate-400">&bull;</span>
@@ -182,8 +182,8 @@
                 <span class="font-heading font-bold text-xl text-white">Broiler<span class="text-emerald-400">App</span></span>
             </div>
             <p class="text-slate-500 text-sm text-center md:text-left">
-                &copy; {{ date('Y') }} Dibangun khusus untuk Program P2MW.<br>
-                Dikembangkan oleh <span class="text-slate-300 font-semibold">M Aulia Aziz 2310020119</span>
+                &copy; {{ date('Y') }} Proyek Praktik Kerja Lapangan (PKL) — Peternakan Broiler Hanau.<br>
+                Dikembangkan oleh <span class="text-slate-300 font-semibold">M Aulia Aziz 2310020119 — FTI UNISKA Banjarmasin</span>
             </p>
         </div>
     </footer>
