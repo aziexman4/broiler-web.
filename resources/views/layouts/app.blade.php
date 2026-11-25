@@ -41,27 +41,28 @@
                         tooltipBorder: dark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(226, 232, 240, 1)',
                     };
                 },
-                applyChart(chart, options = {}) {
-                    if (!chart) return;
+                applyChartOptions(rawOptions) {
+                    if (!rawOptions || typeof rawOptions !== 'object') return rawOptions;
                     const p = this.palette();
 
-                    chart.options.plugins = chart.options.plugins || {};
-                    chart.options.plugins.legend = chart.options.plugins.legend || {};
-                    chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
-                    chart.options.plugins.legend.labels.color = p.text;
+                    rawOptions.plugins = rawOptions.plugins || {};
+                    rawOptions.plugins.legend = rawOptions.plugins.legend || {};
+                    rawOptions.plugins.legend.labels = rawOptions.plugins.legend.labels || {};
+                    rawOptions.plugins.legend.labels.color = p.text;
 
-                    chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
-                    chart.options.plugins.tooltip.backgroundColor = p.tooltipBg;
-                    chart.options.plugins.tooltip.titleColor = p.tooltipTitle;
-                    chart.options.plugins.tooltip.bodyColor = p.tooltipBody;
-                    chart.options.plugins.tooltip.borderColor = p.tooltipBorder;
-                    chart.options.plugins.tooltip.borderWidth = 1;
+                    rawOptions.plugins.tooltip = rawOptions.plugins.tooltip || {};
+                    rawOptions.plugins.tooltip.backgroundColor = p.tooltipBg;
+                    rawOptions.plugins.tooltip.titleColor = p.tooltipTitle;
+                    rawOptions.plugins.tooltip.bodyColor = p.tooltipBody;
+                    rawOptions.plugins.tooltip.borderColor = p.tooltipBorder;
+                    rawOptions.plugins.tooltip.borderWidth = 1;
 
-                    Object.values(chart.options.scales || {}).forEach((scale) => {
-                        if (!scale) return;
+                    rawOptions.scales = rawOptions.scales || {};
+                    Object.values(rawOptions.scales).forEach((scale) => {
+                        if (!scale || typeof scale !== 'object') return;
                         scale.ticks = scale.ticks || {};
                         scale.ticks.color = p.text;
-                        if (scale.title) {
+                        if (scale.title && typeof scale.title === 'object') {
                             scale.title.color = p.text;
                         }
                         if (!scale.grid || scale.grid.display !== false) {
@@ -70,10 +71,25 @@
                         }
                     });
 
+                    return rawOptions;
+                },
+                applyChart(chart, options = {}) {
+                    if (!chart || !chart.config) return;
+                    if (!chart.config.options) {
+                        chart.config.options = {};
+                    }
+                    this.applyChartOptions(chart.config.options);
                     if (typeof options.onUpdate === 'function') {
-                        options.onUpdate(chart, p);
+                        options.onUpdate(chart, this.palette());
                     }
                     chart.update('none');
+                },
+                createChart(ctx, config, options = {}) {
+                    config.options = config.options || {};
+                    this.applyChartOptions(config.options);
+                    const chart = new Chart(ctx, config);
+                    window.addEventListener('theme-changed', () => this.applyChart(chart, options));
+                    return chart;
                 },
                 registerChart(chart, options = {}) {
                     if (!chart) return chart;

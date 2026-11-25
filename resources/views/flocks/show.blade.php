@@ -908,88 +908,90 @@
                     });
                 }
 
+                const buildChart = (ctx, config) => window.BroilerTheme
+                    ? window.BroilerTheme.createChart(ctx, config)
+                    : new Chart(ctx, config);
+
                 // 1. Mortality Chart
-                const ctxMortality = document.getElementById('mortalityChart').getContext('2d');
-                window.mortalityChartInstance = new Chart(ctxMortality, {
-                    type: 'line',
-                    data: {
-                        labels: dates,
-                        datasets: [{
-                            label: 'Kematian (Ekor)',
-                            data: mortalityData,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.3
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: {} },
-                            tooltip: { padding: 10, boxPadding: 4 }
+                const mortalityCanvas = document.getElementById('mortalityChart');
+                if (mortalityCanvas) {
+                    window.mortalityChartInstance = buildChart(mortalityCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [{
+                                label: 'Kematian (Ekor)',
+                                data: mortalityData,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.3
+                            }]
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {},
-                                ticks: {}
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: {} },
+                                tooltip: { padding: 10, boxPadding: 4 }
                             },
-                            x: {
-                                grid: { display: false },
-                                ticks: {}
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {},
+                                    ticks: {}
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {}
+                                }
                             }
                         }
-                    }
-                });
-                if (window.BroilerTheme) {
-                    window.BroilerTheme.registerChart(window.mortalityChartInstance);
+                    });
                 }
 
                 // 2. Feed Chart
-                const ctxFeed = document.getElementById('feedChart').getContext('2d');
-                window.feedChartInstance = new Chart(ctxFeed, {
-                    type: 'bar',
-                    data: {
-                        labels: dates,
-                        datasets: [{
-                            label: 'Konsumsi Pakan (Kg)',
-                            data: feedData,
-                            backgroundColor: '#6366f1',
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: {} },
-                            tooltip: { padding: 10, boxPadding: 4 }
+                const feedCanvas = document.getElementById('feedChart');
+                if (feedCanvas) {
+                    window.feedChartInstance = buildChart(feedCanvas.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: dates,
+                            datasets: [{
+                                label: 'Konsumsi Pakan (Kg)',
+                                data: feedData,
+                                backgroundColor: '#6366f1',
+                                borderRadius: 4
+                            }]
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {},
-                                ticks: {}
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: {} },
+                                tooltip: { padding: 10, boxPadding: 4 }
                             },
-                            x: {
-                                grid: { display: false },
-                                ticks: {}
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {},
+                                    ticks: {}
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {}
+                                }
                             }
                         }
-                    }
-                });
-                if (window.BroilerTheme) {
-                    window.BroilerTheme.registerChart(window.feedChartInstance);
+                    });
                 }
 
                 // 3. BEP Growth Tracker Chart (AI Forecast)
                 const bepDataRaw = {!! $bepChartData ?? 'null' !!};
-                if(bepDataRaw && document.getElementById('bepChart')) {
-                    const ctxBep = document.getElementById('bepChart').getContext('2d');
-                    window.bepChartInstance = new Chart(ctxBep, {
+                const bepCanvas = document.getElementById('bepChart');
+                if (bepDataRaw && bepCanvas) {
+                    window.bepChartInstance = buildChart(bepCanvas.getContext('2d'), {
                         type: 'line',
                         data: {
                             labels: bepDataRaw.labels,
@@ -1043,9 +1045,6 @@
                             }
                         }
                     });
-                    if (window.BroilerTheme) {
-                        window.BroilerTheme.registerChart(window.bepChartInstance);
-                    }
                 }
             });
         </script>

@@ -167,7 +167,7 @@
             const labels = @json($chartLabels);
             const data = @json($chartData);
 
-            const profitChart = new Chart(ctx, {
+            const profitConfig = {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -219,11 +219,11 @@
                         }
                     }
                 }
-            });
+            };
 
-            if (window.BroilerTheme) {
-                window.BroilerTheme.registerChart(profitChart);
-            }
+            window.BroilerTheme
+                ? window.BroilerTheme.createChart(ctx, profitConfig)
+                : new Chart(ctx, profitConfig);
         });
     </script>
 </x-app-layout>

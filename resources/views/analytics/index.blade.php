@@ -187,8 +187,7 @@
             });
 
             const ctx = document.getElementById('ipHeatmapChart').getContext('2d');
-
-            const ipChart = new Chart(ctx, {
+            const ipConfig = {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -238,11 +237,11 @@
                         }
                     }
                 }
-            });
+            };
 
-            if (window.BroilerTheme) {
-                window.BroilerTheme.registerChart(ipChart);
-            }
+            window.BroilerTheme
+                ? window.BroilerTheme.createChart(ctx, ipConfig)
+                : new Chart(ctx, ipConfig);
         });
     </script>
 </x-app-layout>
