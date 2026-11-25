@@ -754,26 +754,30 @@
                         if (tbody) {
                             tbody.innerHTML = '';
                             data.records.forEach(record => {
-                                const trClass = record.isHighMortality ? 'bg-red-50 text-red-900 border-l-4 border-red-500' : 'hover:bg-gray-50';
-                                const mortClass = record.isHighMortality ? 'text-red-700 font-bold' : 'text-red-600';
+                                const trClass = record.isHighMortality
+                                    ? 'bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200 border-l-4 border-red-500'
+                                    : 'hover:bg-gray-50 dark:hover:bg-slate-700/40';
+                                const mortClass = record.isHighMortality
+                                    ? 'text-red-700 dark:text-red-400 font-bold'
+                                    : 'text-red-600 dark:text-red-400';
                                 const statusBadge = record.isHighMortality 
-                                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-200 text-red-900">⚠️ High Mortality (>0.5%)</span>'
-                                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Normal</span>';
+                                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-400">⚠️ High Mortality (>0.5%)</span>'
+                                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400">Normal</span>';
 
                                 const tr = document.createElement('tr');
                                 tr.className = trClass;
                                 tr.innerHTML = `
                                     <td class="py-3 px-4 font-medium">${record.date_formatted}</td>
                                     <td class="py-3 px-4 font-semibold ${mortClass}">${record.mortality} ekor</td>
-                                    <td class="py-3 px-4 text-orange-600 font-medium">${record.culling} ekor</td>
-                                    <td class="py-3 px-4 text-indigo-700 font-medium">${record.feed_consumed_kg} kg</td>
+                                    <td class="py-3 px-4 text-orange-600 dark:text-orange-400 font-medium">${record.culling} ekor</td>
+                                    <td class="py-3 px-4 text-indigo-700 dark:text-indigo-400 font-medium">${record.feed_consumed_kg} kg</td>
                                     <td class="py-3 px-4">${statusBadge}</td>
                                     <td class="py-3 px-4 text-right">
                                         ${ '{{ $flock->status }}' === 'active' ? `
                                         <form action="/daily-records/${record.id}" method="POST" onsubmit="return confirm('Hapus catatan ini? Stok pakan yang terpakai akan otomatis dikembalikan ke gudang kandang.');" class="inline">
                                             <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="_method" value="DELETE">
-                                            <button type="submit" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded text-xs font-semibold transition-colors">
+                                            <button type="submit" class="text-red-600 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 bg-red-50 dark:bg-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/60 px-2 py-1 rounded text-xs font-semibold transition-colors">
                                                 Hapus
                                             </button>
                                         </form>
@@ -877,7 +881,9 @@
                         
                         const originalBg = mainInput.style.backgroundColor;
                         mainInput.style.transition = 'background-color 0.5s ease';
-                        mainInput.style.backgroundColor = '#dcfce7'; 
+                        mainInput.style.backgroundColor = window.BroilerTheme?.isDark()
+                            ? 'rgba(16, 185, 129, 0.25)'
+                            : '#dcfce7';
                         setTimeout(() => {
                             mainInput.style.backgroundColor = originalBg;
                         }, 1000);
@@ -894,7 +900,7 @@
                             label: 'Kematian (Ekor)',
                             data: mortalityData,
                             borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.12)',
                             borderWidth: 2,
                             fill: true,
                             tension: 0.3
@@ -903,13 +909,26 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: {} },
+                            tooltip: { padding: 10, boxPadding: 4 }
+                        },
                         scales: {
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                grid: {},
+                                ticks: {}
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {}
                             }
                         }
                     }
                 });
+                if (window.BroilerTheme) {
+                    window.BroilerTheme.registerChart(window.mortalityChartInstance);
+                }
 
                 // 2. Feed Chart
                 const ctxFeed = document.getElementById('feedChart').getContext('2d');
@@ -927,13 +946,26 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: {} },
+                            tooltip: { padding: 10, boxPadding: 4 }
+                        },
                         scales: {
                             y: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                grid: {},
+                                ticks: {}
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {}
                             }
                         }
                     }
                 });
+                if (window.BroilerTheme) {
+                    window.BroilerTheme.registerChart(window.feedChartInstance);
+                }
 
                 // 3. BEP Growth Tracker Chart (AI Forecast)
                 const bepDataRaw = {!! $bepChartData ?? 'null' !!};
@@ -948,7 +980,7 @@
                                     label: 'Aktual Rata-Rata Berat (Gram)',
                                     data: bepDataRaw.actualWeights,
                                     borderColor: '#3b82f6', // Blue
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    backgroundColor: 'rgba(59, 130, 246, 0.12)',
                                     borderWidth: 3,
                                     fill: true,
                                     tension: 0.4
@@ -972,10 +1004,8 @@
                                 intersect: false,
                             },
                             plugins: {
+                                legend: { labels: {} },
                                 tooltip: {
-                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                    titleColor: '#fff',
-                                    bodyColor: '#e2e8f0',
                                     padding: 12,
                                     boxPadding: 4,
                                     usePointStyle: true,
@@ -985,14 +1015,19 @@
                                 y: {
                                     beginAtZero: true,
                                     title: { display: true, text: 'Berat per Ekor (Gram)' },
-                                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                                    grid: {},
+                                    ticks: {}
                                 },
                                 x: {
-                                    grid: { display: false }
+                                    grid: { display: false },
+                                    ticks: {}
                                 }
                             }
                         }
                     });
+                    if (window.BroilerTheme) {
+                        window.BroilerTheme.registerChart(window.bepChartInstance);
+                    }
                 }
             });
         </script>

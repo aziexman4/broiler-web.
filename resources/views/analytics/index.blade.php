@@ -82,9 +82,9 @@
 
             <!-- Heatmap Chart Section -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 p-6">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white">IP Benchmarking Heatmap</h3>
-                    <div class="flex items-center space-x-3 text-sm">
+                    <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                         <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-500 mr-1.5"></span> > 300 (Excellent)</span>
                         <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-400 mr-1.5"></span> 250 - 300 (Good)</span>
                         <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-rose-500 mr-1.5"></span> < 250 (Needs Focus)</span>
@@ -187,13 +187,8 @@
             });
 
             const ctx = document.getElementById('ipHeatmapChart').getContext('2d');
-            
-            // Detect Dark Mode for Text Color
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-            const textColor = isDarkMode ? 'rgba(203, 213, 225, 1)' : 'rgba(71, 85, 105, 1)';
 
-            new Chart(ctx, {
+            const ipChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -213,11 +208,6 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                            titleColor: isDarkMode ? '#fff' : '#000',
-                            bodyColor: isDarkMode ? '#cbd5e1' : '#475569',
-                            borderColor: gridColor,
-                            borderWidth: 1,
                             padding: 12,
                             boxPadding: 4,
                             callbacks: {
@@ -236,13 +226,12 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: { color: gridColor },
-                            ticks: { color: textColor }
+                            grid: {},
+                            ticks: {}
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { 
-                                color: textColor,
+                            ticks: {
                                 maxRotation: 45,
                                 minRotation: 45
                             }
@@ -250,6 +239,10 @@
                     }
                 }
             });
+
+            if (window.BroilerTheme) {
+                window.BroilerTheme.registerChart(ipChart);
+            }
         });
     </script>
 </x-app-layout>

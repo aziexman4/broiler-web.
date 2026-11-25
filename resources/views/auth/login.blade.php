@@ -52,7 +52,7 @@
         </div>
 
         <!-- Right Side: Login Form -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center bg-white p-6 sm:p-12 lg:p-24 relative">
+        <div class="w-full lg:w-1/2 flex items-center justify-center bg-white dark:bg-slate-900 p-6 sm:p-12 lg:p-24 relative transition-colors">
             
             <div class="w-full max-w-md">
                 
@@ -63,12 +63,12 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                         </svg>
                     </div>
-                    <span class="font-bold text-2xl tracking-tight text-slate-900">BroilerApp</span>
+                    <span class="font-bold text-2xl tracking-tight text-slate-900 dark:text-white">BroilerApp</span>
                 </div>
 
                 <div class="mb-10 text-center lg:text-left">
-                    <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Masuk ke Portal</h2>
-                    <p class="text-sm text-slate-500 mt-2 font-medium">Masukkan email dan kata sandi akses Anda.</p>
+                    <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Masuk ke Portal</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">Masukkan email dan kata sandi akses Anda.</p>
                 </div>
 
                 <!-- Session Status -->
@@ -80,23 +80,23 @@
                     <div class="space-y-5">
                         <!-- Email Address -->
                         <div>
-                            <label for="email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <label for="email" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                                 Email Pekerja / Pemilik
                             </label>
                             <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
                                 placeholder="nama@peternakan.com"
-                                class="block w-full rounded-xl border-slate-200 py-3.5 px-4 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm sm:leading-6 transition-colors">
+                                class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-3.5 px-4 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm sm:leading-6 transition-colors">
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
 
                         <!-- Password -->
                         <div>
-                            <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                                 Kata Sandi
                             </label>
                             <input id="password" type="password" name="password" required autocomplete="current-password"
                                 placeholder="••••••••"
-                                class="block w-full rounded-xl border-slate-200 py-3.5 px-4 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm sm:leading-6 transition-colors">
+                                class="block w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-3.5 px-4 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm sm:leading-6 transition-colors">
                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                         </div>
                     </div>
@@ -104,12 +104,12 @@
                     <!-- Remember Me & Forgot Password -->
                     <div class="flex items-center justify-between pt-2">
                         <label for="remember_me" class="inline-flex items-center group cursor-pointer">
-                            <input id="remember_me" type="checkbox" name="remember" class="rounded border-slate-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                            <span class="ms-2 text-sm text-slate-600 font-medium group-hover:text-slate-900 transition-colors">Ingat Perangkat Ini</span>
+                            <input id="remember_me" type="checkbox" name="remember" class="rounded border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                            <span class="ms-2 text-sm text-slate-600 dark:text-slate-300 font-medium group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Ingat Perangkat Ini</span>
                         </label>
 
                         @if (Route::has('password.request'))
-                            <a class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors" href="{{ route('password.request') }}">
+                            <a class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors" href="{{ route('password.request') }}">
                                 Lupa sandi?
                             </a>
                         @endif
@@ -117,21 +117,21 @@
 
                     <!-- Submit Button -->
                     <div class="pt-4">
-                        <button type="submit" class="w-full flex justify-center items-center py-4 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <button type="submit" class="w-full flex justify-center items-center py-4 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
                             Masuk ke Dashboard &rarr;
                         </button>
                     </div>
                 </form>
 
                 <!-- Footer Access Info -->
-                <div class="mt-12 text-center text-sm text-slate-500 font-medium">
+                <div class="mt-12 text-center text-sm text-slate-500 dark:text-slate-400 font-medium">
                     Pekerja baru?
                     @if(config('app.allow_public_registration'))
-                        <a href="{{ route('register') }}" class="text-indigo-600 hover:text-indigo-800 font-bold ms-1 transition-colors">
+                        <a href="{{ route('register') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold ms-1 transition-colors">
                             Daftar Akun
                         </a>
                     @else
-                        <span class="text-slate-700 font-semibold ms-1">Hubungi Pemilik / Admin untuk aktivasi akun Anda.</span>
+                        <span class="text-slate-700 dark:text-slate-200 font-semibold ms-1">Hubungi Pemilik / Admin untuk aktivasi akun Anda.</span>
                     @endif
                 </div>
 

@@ -23,6 +23,65 @@
                 document.documentElement.classList.remove('dark');
                 document.documentElement.style.backgroundColor = '#f1f5f9'; // slate-100
             }
+
+            window.BroilerTheme = {
+                isDark() {
+                    return document.documentElement.classList.contains('dark');
+                },
+                palette() {
+                    const dark = this.isDark();
+                    return {
+                        dark,
+                        text: dark ? '#cbd5e1' : '#475569',
+                        title: dark ? '#f8fafc' : '#0f172a',
+                        grid: dark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(15, 23, 42, 0.06)',
+                        tooltipBg: dark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.96)',
+                        tooltipTitle: dark ? '#f8fafc' : '#0f172a',
+                        tooltipBody: dark ? '#cbd5e1' : '#475569',
+                        tooltipBorder: dark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(226, 232, 240, 1)',
+                    };
+                },
+                applyChart(chart, options = {}) {
+                    if (!chart) return;
+                    const p = this.palette();
+
+                    chart.options.plugins = chart.options.plugins || {};
+                    chart.options.plugins.legend = chart.options.plugins.legend || {};
+                    chart.options.plugins.legend.labels = chart.options.plugins.legend.labels || {};
+                    chart.options.plugins.legend.labels.color = p.text;
+
+                    chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
+                    chart.options.plugins.tooltip.backgroundColor = p.tooltipBg;
+                    chart.options.plugins.tooltip.titleColor = p.tooltipTitle;
+                    chart.options.plugins.tooltip.bodyColor = p.tooltipBody;
+                    chart.options.plugins.tooltip.borderColor = p.tooltipBorder;
+                    chart.options.plugins.tooltip.borderWidth = 1;
+
+                    Object.values(chart.options.scales || {}).forEach((scale) => {
+                        if (!scale) return;
+                        scale.ticks = scale.ticks || {};
+                        scale.ticks.color = p.text;
+                        if (scale.title) {
+                            scale.title.color = p.text;
+                        }
+                        if (!scale.grid || scale.grid.display !== false) {
+                            scale.grid = scale.grid || {};
+                            scale.grid.color = p.grid;
+                        }
+                    });
+
+                    if (typeof options.onUpdate === 'function') {
+                        options.onUpdate(chart, p);
+                    }
+                    chart.update('none');
+                },
+                registerChart(chart, options = {}) {
+                    if (!chart) return chart;
+                    this.applyChart(chart, options);
+                    window.addEventListener('theme-changed', () => this.applyChart(chart, options));
+                    return chart;
+                }
+            };
         </script>
 
 
@@ -45,11 +104,9 @@
             toggleTheme() {
                 this.darkMode = !this.darkMode;
                 localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
-                if (this.darkMode) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
+                document.documentElement.classList.toggle('dark', this.darkMode);
+                document.documentElement.style.backgroundColor = this.darkMode ? '#020617' : '#f1f5f9';
+                window.dispatchEvent(new CustomEvent('theme-changed', { detail: { dark: this.darkMode } }));
             }
         }"
         class="font-sans antialiased bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-indigo-500 selection:text-white">
@@ -67,12 +124,12 @@
                     <div class="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                         <!-- Mobile Hamburger Button -->
                         <div class="flex items-center md:hidden">
-                            <button @click="sidebarOpen = !sidebarOpen" class="text-slate-500 hover:text-gray-700 focus:outline-none">
+                            <button @click="sidebarOpen = !sidebarOpen" aria-label="Buka menu navigasi" class="p-2 -ms-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors">
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
-                            <span class="ms-3 font-bold text-slate-800 dark:text-white">BroilerApp Pro</span>
+                            <span class="ms-2 font-bold text-slate-800 dark:text-white">BroilerApp Pro</span>
                         </div>
 
                         <!-- Top Header Title/Context -->
@@ -85,7 +142,7 @@
                         <!-- User Profile Dropdown -->
                         <div class="flex items-center space-x-3 ms-auto">
                             <!-- Dark Mode Toggle -->
-                            <button @click="toggleTheme()" class="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none transition-colors duration-200">
+                            <button @click="toggleTheme()" type="button" :aria-pressed="darkMode.toString()" aria-label="Ganti mode tampilan" title="Ganti Light / Dark Mode" class="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors duration-200">
                                 <!-- Sun Icon (shown in dark mode) -->
                                 <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.78a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.414l-.708-.707a1 1 0 010-1.414zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-2.78 4.22a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.78a1 1 0 01-1.415 0l-.707-.707a1 1 0 011.414-1.414l.708.707a1 1 0 010 1.414zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm2.78-4.22a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM10 5a5 5 0 100 10 5 5 0 000-10z" clip-rule="evenodd" />
@@ -102,7 +159,7 @@
 
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="inline-flex items-center px-3 py-2 border border-slate-200 dark:border-slate-600 text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 hover:text-slate-900 dark:hover:text-white focus:outline-none transition ease-in-out duration-150 shadow-md">
+                                    <button class="inline-flex items-center px-3 py-2 border border-slate-200 dark:border-slate-700 text-sm leading-4 font-medium rounded-xl text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white focus:outline-none transition ease-in-out duration-150 shadow-sm">
                                         <div>{{ Auth::user()->name }}</div>
                                         <div class="ms-1">
                                             <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -133,14 +190,14 @@
 
                     <!-- Mobile Header Slot -->
                     @isset($header)
-                        <div class="md:hidden px-4 py-2 bg-slate-50 border-t border-slate-200">
+                        <div class="md:hidden px-4 py-3 bg-slate-50 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 transition-colors duration-200">
                             {{ $header }}
                         </div>
                     @endisset
                 </header>
 
                 <!-- Scrollable Main Content -->
-                <main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-gray-900 transition-colors duration-200 flex flex-col">
+                <main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors duration-200 flex flex-col">
                     <div class="flex-1">
                         {{ $slot }}
                     </div>

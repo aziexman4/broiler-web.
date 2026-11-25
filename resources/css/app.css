@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   /* Global Cards & White Panels */
   .bg-white {
     @apply dark:bg-slate-800 dark:border-slate-700 transition-colors duration-200;
@@ -46,6 +54,8 @@
   input[type="password"],
   input[type="number"],
   input[type="date"],
+  input[type="month"],
+  input[type="time"],
   select,
   textarea {
     @apply dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:placeholder-slate-400 focus:dark:ring-indigo-500 focus:dark:border-indigo-500 transition-colors duration-200;

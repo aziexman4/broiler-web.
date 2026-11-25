@@ -26,7 +26,7 @@
         </script>
 
     </head>
-    <body class="font-sans text-slate-900 dark:text-gray-100 antialiased bg-slate-50 dark:bg-gray-900 transition-colors duration-200">
+    <body class="font-sans text-slate-900 dark:text-slate-100 antialiased bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         {{ $slot }}
     </body>
 </html>

@@ -167,18 +167,18 @@
             const labels = @json($chartLabels);
             const data = @json($chartData);
 
-            new Chart(ctx, {
+            const profitChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: 'Laba Bersih (Rp)',
                         data: data,
-                        backgroundColor: 'rgba(79, 70, 229, 0.75)',
-                        borderColor: 'rgb(79, 70, 229)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderColor: 'rgb(99, 102, 241)',
                         borderWidth: 2,
                         borderRadius: 6,
-                        hoverBackgroundColor: 'rgba(79, 70, 229, 0.95)',
+                        hoverBackgroundColor: 'rgba(99, 102, 241, 0.95)',
                     }]
                 },
                 options: {
@@ -188,8 +188,11 @@
                         legend: {
                             display: true,
                             position: 'top',
+                            labels: {}
                         },
                         tooltip: {
+                            padding: 12,
+                            boxPadding: 4,
                             callbacks: {
                                 label: function(context) {
                                     let value = context.raw || 0;
@@ -206,18 +209,21 @@
                                     return 'Rp ' + new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(value);
                                 }
                             },
-                            grid: {
-                                color: 'rgba(241, 245, 249, 1)'
-                            }
+                            grid: {}
                         },
                         x: {
                             grid: {
                                 display: false
-                            }
+                            },
+                            ticks: {}
                         }
                     }
                 }
             });
+
+            if (window.BroilerTheme) {
+                window.BroilerTheme.registerChart(profitChart);
+            }
         });
     </script>
 </x-app-layout>
