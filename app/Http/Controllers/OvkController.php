@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashFlow;
+use App\Models\Flock;
 use App\Models\OvkInventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,18 +11,35 @@ use Illuminate\Support\Facades\DB;
 class OvkController extends Controller
 {
     /**
-     * Display OVK inventory transactions and summary.
+     * Display OVK inventory transactions, per-item available stock, and summary.
      */
     public function index()
     {
-        $records = OvkInventory::orderBy('record_date', 'desc')
+        $records = OvkInventory::with('flock.coop')
+            ->orderBy('record_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
 
         $totalSpending = OvkInventory::where('transaction_type', 'in')->sum('total_price');
+        $activeFlocks = Flock::with('coop')
+            ->where('status', 'active')
+            ->orderBy('name', 'asc')
+            ->get();
 
-        return view('ovk.index', compact('records', 'totalSpending'));
+        $stockBalances = OvkInventory::selectRaw("
+                LOWER(TRIM(item_name)) as item_key,
+                MAX(item_name) as item_name,
+                MAX(category) as category,
+                LOWER(TRIM(unit)) as unit_key,
+                MAX(unit) as unit,
+                SUM(CASE WHEN transaction_type = 'in' THEN quantity ELSE -quantity END) as balance
+            ")
+            ->groupByRaw('LOWER(TRIM(item_name)), LOWER(TRIM(unit))')
+            ->orderBy('item_name')
+            ->get();
+
+        return view('ovk.index', compact('records', 'totalSpending', 'activeFlocks', 'stockBalances'));
     }
 
     /**
@@ -34,6 +52,7 @@ class OvkController extends Controller
             'item_name' => 'required|string|max:255',
             'category' => 'required|in:obat,vaksin,kimia',
             'transaction_type' => 'required|in:in,out',
+            'flock_id' => 'nullable|exists:flocks,id',
             'quantity' => 'required|numeric|min:0.01',
             'unit' => 'required|string|max:50',
             'total_price' => 'nullable|integer|min:0',
@@ -41,9 +60,11 @@ class OvkController extends Controller
             'sync_cash_flow' => 'nullable|boolean',
         ]);
 
-        // If transaction_type is 'out', clear total_price
+        // Clear total_price on usage out; clear flock_id on warehouse purchase in
         if ($validated['transaction_type'] === 'out') {
             $validated['total_price'] = null;
+        } else {
+            $validated['flock_id'] = null;
         }
 
         $syncCashFlow = $request->boolean('sync_cash_flow');

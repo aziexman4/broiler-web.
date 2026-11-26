@@ -1,58 +1,99 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SmartCoop — Sistem Informasi Manajemen Kepegawaian & Monitoring Produktivitas Kandang Ayam Broiler
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web berbasis **Laravel 13**, **TailwindCSS**, **Alpine.js**, **Chart.js**, dan **DomPDF** untuk mengelola operasional harian budidaya ayam broiler, logistik pakan & OVK, pemantauan **Break-Even Point (BEP)** real-time, benchmarking **Indeks Penampilan (IP)** antar unit kandang, arus kas saldo riil, serta penggajian pekerja berbasis performa.
 
-## About Laravel
+> **Proyek Praktik Kerja Lapangan (PKL)**  
+> **Pengembang**: M Aulia Aziz (`2310020119`)  
+> **Program Studi**: S1 Sistem Informasi — Fakultas Teknologi Informasi, Universitas Islam Kalimantan (UNISKA) Muhammad Arsyad Al Banjari Banjarmasin  
+> **Studi Kasus Unit**: Kandang Hanau (Pusat), Kandang Seruyan Utama, & Kandang Plasma C — Kabupaten Seruyan, Kalimantan Tengah.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fitur Utama
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Role-Based Access Control (Owner vs Pekerja Kandang)
+- **Owner (`manage-enterprise`)**: Akses penuh ke dashboard finansial, seluruh unit kandang, gudang pakan pusat, inventaris OVK, panen (penjarangan & tutup buku), analitik & benchmarking, penggajian (payroll), arus kas operasional, dan audit trail.
+- **Pekerja Kandang (`worker`)**: Hanya melihat dan mengelola siklus kandang yang ditugaskan kepadanya, mencatat recording harian 3 fase pakan, mengajukan & menerima kiriman pakan, mencetak recording harian, serta mengunduh slip gaji miliknya sendiri (`/my-payslips`).
 
-## Learning Laravel
+### 2. Operasional Kandang, Validasi Biologis, & Panen Penjarangan
+- **Recording Harian 3 Fase Pakan**: Pencatatan konsumsi pakan `Pre-Starter`, `Starter`, dan `Finisher`, kematian (`mortality`), afkir (`culling`), serta sampling bobot rata-rata harian (`gram/ekor`).
+- **Validasi Kapasitas Biologis & EWS**: Mencegah salah input/manipulasi konsumsi pakan melebihi batas biologis harian per ekor, serta memicu **Early Warning System (EWS)** jika kematian harian melebihi `0.5%`.
+- **Logistik Pakan Terkontrol**: Alur permintaan pakan (`pending` -> `shipped` -> `completed` atau `rejected` untuk tolak/batal) yang terhubung otomatis dengan stok gudang pusat dan stok kandang.
+- **Panen Penjarangan (*Thinning*) & Panen Akhir**: Mendukung panen parsial tanpa menutup siklus maupun panen akhir kuras kandang (*Tutup Buku*) dengan perhitungan proporsional biaya pakan & modal DOC.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 3. Analitik, Benchmarking, & Live BEP Forecasting
+- **Live & Historical BEP Tracker**: Membandingkan kurva bobot aktual ayam terhadap garis target impas harian (`Modal DOC + Kumulatif Pakan` dibagi harga pasar & populasi hidup).
+- **Monitoring Kandang Aktif vs Historis Tutup Buku**: Memisahkan estimasi performa kandang yang sedang berjalan (termasuk kurva pertumbuhan bobot harian antar kandang aktif) dari rata-rata historis siklus selesai.
+- **Unit Leaderboard & Dual Grafik**: Peringkat performa antar unit kandang berdasarkan rata-rata IP, dilengkapi garis target bonus `IP >= 300` serta grafik tren efisiensi `FCR` & bobot panen.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 4. Keuangan Terintegrasi & 5 Laporan Cetak PDF A4 Resmi
+- **Saldo Kas Riil & Running Balance**: Sinkronisasi kas otomatis dari pembelian pakan, OVK, Chick-In DOC, penjualan panen, dan pembayaran gaji, dilengkapi kolom **Saldo Kas Saat Itu** di setiap baris transaksi.
+- **Payroll & Bonus IP Otomatis**: Menghitung rekomendasi bonus pekerja berdasarkan capaian IP siklus selesai.
+- **Cetak Pratinjau & Unduh PDF A4 Ber-kop**:
+  1. Laporan Recording Harian Kandang
+  2. Laporan Akhir Panen & Evaluasi Laba/Rugi
+  3. Laporan Analitik & Benchmarking Unit Kandang
+  4. Laporan Arus Kas Operasional
+  5. Laporan Audit Mutasi Gudang Pakan & Slip Gaji Pekerja
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+---
 
-## Agentic Development
+## Rumus Perhitungan Utama
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- **Daya Hidup (Livability)**:
+  $$\text{Livability (\%)} = \frac{\text{Populasi Hidup}}{\text{Populasi Awal}} \times 100$$
+- **Feed Conversion Ratio (FCR)**:
+  $$\text{FCR} = \frac{\text{Total Pakan Terpakai (kg)}}{\text{Total Berat Panen (kg)}}$$
+- **Indeks Penampilan (IP)**:
+  $$\text{IP} = \frac{\text{Livability (\%)} \times \text{Bobot Rata-rata (kg)}}{\text{FCR} \times \text{Umur Panen (hari)}} \times 100$$
+- **Skema Bonus Performa Pekerja**:
+  - `IP >= 400`: **20%** dari Gaji Pokok (*Sangat Baik*)
+  - `IP 350 - 399`: **15%** dari Gaji Pokok (*Baik*)
+  - `IP 300 - 349`: **10%** dari Gaji Pokok (*Cukup / Standar*)
+  - `IP < 300`: **0%** (*Kurang*)
+
+---
+
+## Instalasi & Menjalankan di Lokal
+
+1. **Clone repositori & instal dependensi**
+   ```bash
+   git clone https://github.com/aziexman4/broiler-web..git
+   cd broiler-web
+   composer install
+   npm install
+   ```
+2. **Siapkan konfigurasi `.env` & database**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   php artisan migrate --seed
+   ```
+3. **Build aset frontend & jalankan server**
+   ```bash
+   npm run build
+   php artisan serve
+   ```
+
+---
+
+## Akun Demo Lokal (`php artisan db:seed`)
+
+Pada environment `local`, halaman `/login` menyediakan kartu **Akses Cepat Demo PKL** dengan kata sandi seluruh akun: `password`.
+
+| Peran | Nama Pengguna | Unit Kandang | Email | Kata Sandi |
+| :--- | :--- | :--- | :--- | :--- |
+| **Owner / Pemilik** | Owner SmartCoop | Seluruh Unit (Pusat) | `owner@smartcoop.com` | `password` |
+| **Pekerja Kandang** | Muhammad Harries Rasyadi | Kandang Hanau | `harries@smartcoop.com` | `password` |
+| **Pekerja Kandang** | Danang Onky Romadhoni | Kandang Seruyan Utama | `danang@smartcoop.com` | `password` |
+| **Pekerja Kandang** | Mujawiri Apandie | Kandang Plasma C | `mujawiri@smartcoop.com` | `password` |
+
+---
+
+## Pengujian Otomatis (Automated Testing)
+
+Seluruh fitur utama, otorisasi role, rumus metrik, logistik pakan, OVK, arus kas riil, dan ekspor PDF diuji menggunakan **PHPUnit**:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php vendor/phpunit/phpunit/phpunit --bootstrap vendor/autoload.php
 ```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

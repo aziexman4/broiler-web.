@@ -1221,4 +1221,143 @@ class BroilerSystemTest extends TestCase
         $pdfDownload->assertOk();
         $this->assertStringStartsWith('%PDF-', $pdfDownload->getContent());
     }
+
+    public function test_field_realistic_workflows_doc_cash_sync_feed_reject_ovk_flock_and_thinning_harvest(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Owner Lapangan']);
+        $worker = User::factory()->create(['role' => 'worker', 'name' => 'Worker Lapangan']);
+        $otherWorker = User::factory()->create(['role' => 'worker', 'name' => 'Worker Lain']);
+
+        \App\Models\SystemSetting::updateOrCreate(['key' => 'doc_price'], ['value' => '8000']);
+
+        $coop = Coop::create([
+            'name' => 'Kandang Lapangan',
+            'address' => 'Hanau',
+            'manager_name' => 'Worker Lapangan',
+            'is_headquarters' => true,
+        ]);
+
+        // 1. Chick-In with sync_doc_cash_flow posts DOC expense automatically
+        $this->actingAs($owner)->post(route('flocks.store'), [
+            'coop_id' => $coop->id,
+            'name' => 'Siklus Uji Lapangan',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-10-01',
+            'initial_population' => 1000,
+            'worker_id' => $worker->id,
+            'sync_doc_cash_flow' => '1',
+        ])->assertRedirect();
+
+        $flock = Flock::where('name', 'Siklus Uji Lapangan')->firstOrFail();
+        $this->assertDatabaseHas('cash_flows', [
+            'type' => 'out',
+            'amount' => 8000000,
+        ]);
+
+        // 2. Feed request reject / cancel without deducting central feed stock
+        \App\Models\FeedInventory::create([
+            'transaction_date' => '2026-10-01',
+            'feed_name' => 'Starter Gudang',
+            'transaction_type' => 'in',
+            'quantity_kg' => 5000,
+            'price_per_kg' => 9000,
+        ]);
+
+        $reqByWorker = \App\Models\FeedRequest::create([
+            'flock_id' => $flock->id,
+            'feed_type' => 'Starter',
+            'amount_kg' => 3500,
+            'status' => 'pending',
+        ]);
+
+        // Unassigned worker cannot cancel another worker's feed request
+        $this->actingAs($otherWorker)->post(route('feed_requests.reject', $reqByWorker))->assertForbidden();
+
+        // Assigned worker cancels typo'd request; Owner rejects another pending request
+        $this->actingAs($worker)->post(route('feed_requests.reject', $reqByWorker))->assertRedirect();
+        $this->assertSame('rejected', $reqByWorker->fresh()->status);
+
+        $reqForOwnerReject = \App\Models\FeedRequest::create([
+            'flock_id' => $flock->id,
+            'feed_type' => 'Finisher',
+            'amount_kg' => 500,
+            'status' => 'pending',
+        ]);
+        $this->actingAs($owner)->post(route('feed_requests.reject', $reqForOwnerReject))->assertRedirect();
+        $this->assertSame('rejected', $reqForOwnerReject->fresh()->status);
+        $this->assertSame(0.0, (float) \App\Models\FeedInventory::where('transaction_type', 'out')->sum('quantity_kg'));
+
+        // 3. OVK purchase & flock-linked usage with available stock balance
+        $this->actingAs($owner)->post(route('ovk.store'), [
+            'record_date' => '2026-10-02',
+            'item_name' => 'Vita Stress Uji',
+            'category' => 'obat',
+            'transaction_type' => 'in',
+            'quantity' => 10,
+            'unit' => 'sachet',
+            'total_price' => 250000,
+            'sync_cash_flow' => '1',
+        ])->assertRedirect(route('ovk.index'));
+
+        $this->actingAs($owner)->post(route('ovk.store'), [
+            'record_date' => '2026-10-05',
+            'item_name' => 'Vita Stress Uji',
+            'category' => 'obat',
+            'transaction_type' => 'out',
+            'flock_id' => $flock->id,
+            'quantity' => 3,
+            'unit' => 'sachet',
+        ])->assertRedirect(route('ovk.index'));
+
+        $ovkPage = $this->actingAs($owner)->get(route('ovk.index'));
+        $ovkPage->assertOk();
+        $ovkPage->assertSee('Siklus Uji Lapangan');
+        $ovkPage->assertViewHas('stockBalances', function ($balances) {
+            $item = $balances->firstWhere('item_name', 'Vita Stress Uji');
+            return $item !== null && (float) $item->balance === 7.0;
+        });
+
+        // 4. Thinning (partial harvest) keeps flock active, then final harvest closes without double-counting DOC/feed
+        $flock->dailyRecords()->create([
+            'record_date' => '2026-10-28',
+            'mortality' => 20,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 400,
+            'feed_starter_kg' => 1000,
+            'feed_finisher_kg' => 1600,
+            'average_weight_gram' => 1900,
+        ]);
+
+        // Thinning: sell 300 of 980 live birds, keep active (close_flock = 0)
+        $this->actingAs($owner)->post(route('harvests.store', $flock), [
+            'harvest_date' => '2026-10-29',
+            'chickens_sold' => 300,
+            'total_weight_kg' => 540,
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'buyer_name' => 'Pembeli Penjarangan',
+            'close_flock' => '0',
+        ])->assertRedirect(route('flocks.show', $flock));
+
+        $this->assertSame('active', $flock->fresh()->status);
+
+        // Final harvest: sell remaining 680 birds and close flock (close_flock = 1)
+        $this->actingAs($owner)->post(route('harvests.store', $flock), [
+            'harvest_date' => '2026-11-04',
+            'chickens_sold' => 680,
+            'total_weight_kg' => 1428,
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'buyer_name' => 'Pembeli Akhir',
+            'close_flock' => '1',
+        ])->assertRedirect(route('flocks.show', $flock));
+
+        $this->assertSame('closed', $flock->fresh()->status);
+        $this->assertSame(980, (int) $flock->harvests()->sum('total_chickens_sold'));
+
+        // Total feed = 3000 * 9000 = 27,000,000; Total DOC = 1000 * 8000 = 8,000,000
+        // Gross = (540 + 1428) * 23000 = 45,264,000 -> Combined Net Profit = 10,264,000
+        $this->assertEquals(27000000.0, round((float) $flock->harvests()->sum('total_feed_cost'), 2));
+        $this->assertEquals(10264000.0, round((float) $flock->harvests()->sum('net_profit'), 2));
+    }
 }

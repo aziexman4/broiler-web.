@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashFlow;
 use App\Models\Coop;
 use App\Models\Flock;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\FlockMetricsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -53,8 +56,9 @@ class FlockController extends Controller
 
         $workers = User::where('role', 'worker')->get();
         $coops = Coop::all();
+        $docPrice = (int) (SystemSetting::where('key', 'doc_price')->value('value') ?? 8000);
 
-        return view('flocks.create', compact('workers', 'coops'));
+        return view('flocks.create', compact('workers', 'coops', 'docPrice'));
     }
 
     /**
@@ -71,13 +75,37 @@ class FlockController extends Controller
             'start_date' => 'required|date',
             'initial_population' => 'required|integer|min:1',
             'worker_id' => ['nullable', Rule::exists('users', 'id')->where('role', 'worker')],
+            'sync_doc_cash_flow' => 'nullable|boolean',
         ]);
 
-        $validated['status'] = 'active';
+        $syncDocCashFlow = $request->boolean('sync_doc_cash_flow');
+        $docPrice = (int) (SystemSetting::where('key', 'doc_price')->value('value') ?? 8000);
 
-        $flock = Flock::create($validated);
+        $flock = DB::transaction(function () use ($validated, $syncDocCashFlow, $docPrice) {
+            $payload = collect($validated)->except('sync_doc_cash_flow')->all();
+            $payload['status'] = 'active';
+            $createdFlock = Flock::create($payload);
 
-        return redirect()->route('flocks.show', $flock)->with('success', 'Kandang berhasil ditambahkan!');
+            if ($syncDocCashFlow) {
+                $docTotal = (int) round($createdFlock->initial_population * $docPrice);
+                if ($docTotal > 0) {
+                    CashFlow::create([
+                        'transaction_date' => $createdFlock->start_date,
+                        'description' => "Pengadaan DOC ({$createdFlock->breed}, " . number_format($createdFlock->initial_population, 0, ',', '.') . " ekor) — {$createdFlock->name}",
+                        'type' => 'out',
+                        'amount' => $docTotal,
+                    ]);
+                }
+            }
+
+            return $createdFlock;
+        });
+
+        $msg = $syncDocCashFlow
+            ? 'Kandang berhasil ditambahkan & biaya modal DOC telah dicatat ke Arus Kas!'
+            : 'Kandang berhasil ditambahkan!';
+
+        return redirect()->route('flocks.show', $flock)->with('success', $msg);
     }
 
     /**

@@ -93,6 +93,39 @@ class FeedRequestController extends Controller
         return back()->with('success', 'Pakan berhasil dikirim ke Kandang.');
     }
 
+    public function reject(FeedRequest $feedRequest)
+    {
+        $user = auth()->user();
+        if (!$user->isOwner() && !Gate::allows('update', $feedRequest->flock)) {
+            abort(403, 'Anda tidak memiliki akses untuk membatalkan permintaan pakan ini.');
+        }
+
+        $this->ensureFlockIsActive($feedRequest->flock);
+
+        $errorMsg = null;
+
+        DB::transaction(function () use ($feedRequest, &$errorMsg) {
+            $lockedRequest = FeedRequest::lockForUpdate()->findOrFail($feedRequest->id);
+
+            if ($lockedRequest->status !== 'pending') {
+                $errorMsg = 'Hanya permintaan pakan berstatus Pending yang dapat ditolak atau dibatalkan.';
+                return;
+            }
+
+            $lockedRequest->update(['status' => 'rejected']);
+        });
+
+        if ($errorMsg !== null) {
+            return back()->with('error', $errorMsg);
+        }
+
+        $msg = $user->isOwner()
+            ? 'Permintaan pakan berhasil ditolak.'
+            : 'Permintaan pakan berhasil dibatalkan.';
+
+        return back()->with('success', $msg);
+    }
+
     public function receive(FeedRequest $feedRequest)
     {
         Gate::authorize('update', $feedRequest->flock);

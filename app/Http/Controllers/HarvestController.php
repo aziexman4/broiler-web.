@@ -29,20 +29,36 @@ class HarvestController extends Controller
     }
 
     /**
-     * Record harvest financials, close flock, and post cash-in transaction atomically.
+     * Record harvest financials, optionally close flock (final harvest vs thinning), and post cash-in transaction atomically.
      */
-    private function recordHarvestAndCloseFlock(Flock $flock, array $params): Harvest
+    private function recordHarvestAndCloseFlock(Flock $flock, array $params, bool $closeFlock = true): Harvest
     {
-        return DB::transaction(function () use ($flock, $params) {
+        return DB::transaction(function () use ($flock, $params, $closeFlock) {
             $totalFeedConsumed = (float) $flock->dailyRecords()
                 ->sum(DB::raw('feed_pre_starter_kg + feed_starter_kg + feed_finisher_kg'));
-            $totalFeedCost = $totalFeedConsumed * $params['feed_price_per_kg'];
+            $cumulativeFeedCost = $totalFeedConsumed * $params['feed_price_per_kg'];
+            $priorFeedCost = (float) $flock->harvests()->sum('total_feed_cost');
+            $priorChickensSold = (int) $flock->harvests()->sum('total_chickens_sold');
 
             $docPrice = (float) (SystemSetting::where('key', 'doc_price')->value('value') ?? 8000);
-            $totalDocCost = $flock->initial_population * $docPrice;
+            $fullDocCost = $flock->initial_population * $docPrice;
+            $priorDocAllocated = $flock->initial_population > 0
+                ? round($fullDocCost * min(1, $priorChickensSold / $flock->initial_population), 2)
+                : 0.0;
+
+            if ($closeFlock) {
+                $totalFeedCost = max(0.0, $cumulativeFeedCost - $priorFeedCost);
+                $allocatedDocCost = max(0.0, $fullDocCost - $priorDocAllocated);
+            } else {
+                $shareRatio = $flock->initial_population > 0
+                    ? min(1.0, $params['total_chickens_sold'] / $flock->initial_population)
+                    : 1.0;
+                $totalFeedCost = round(max(0.0, $cumulativeFeedCost - $priorFeedCost) * $shareRatio, 2);
+                $allocatedDocCost = round($fullDocCost * $shareRatio, 2);
+            }
 
             $grossRevenue = $params['total_weight_kg'] * $params['chicken_price_per_kg'];
-            $netProfit = $grossRevenue - $totalFeedCost - $totalDocCost;
+            $netProfit = $grossRevenue - $totalFeedCost - $allocatedDocCost;
 
             $harvest = $flock->harvests()->create([
                 'harvest_date' => $params['harvest_date'],
@@ -57,15 +73,18 @@ class HarvestController extends Controller
                 'revenue' => $grossRevenue,
             ]);
 
-            $flock->update([
-                'status' => 'closed',
-                'closed_at' => $params['harvest_date'],
-            ]);
+            if ($closeFlock) {
+                $flock->update([
+                    'status' => 'closed',
+                    'closed_at' => $params['harvest_date'],
+                ]);
+            }
 
             if ($grossRevenue > 0) {
+                $labelPrefix = $closeFlock ? 'Pendapatan Panen' : 'Pendapatan Panen Penjarangan';
                 CashFlow::create([
                     'transaction_date' => $params['harvest_date'],
-                    'description' => "Pendapatan Panen {$flock->name} ({$params['buyer_name']})",
+                    'description' => "{$labelPrefix} {$flock->name} ({$params['buyer_name']})",
                     'type' => 'in',
                     'amount' => (int) round($grossRevenue),
                 ]);
@@ -129,29 +148,41 @@ class HarvestController extends Controller
 
         $totalMortality = $flock->dailyRecords()->sum('mortality');
         $totalCulling = $flock->dailyRecords()->sum('culling');
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
+        $alreadyHarvested = (int) $flock->harvests()->sum('total_chickens_sold');
+        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling - $alreadyHarvested);
 
-        return view('harvests.create', compact('flock', 'livePopulation'));
+        $defaultMarketPrice = (int) (SystemSetting::where('key', 'global_market_price')->value('value') ?? 23000);
+        $defaultFeedPrice = (int) (SystemSetting::where('key', 'feed_price')->value('value') ?? 9000);
+
+        return view('harvests.create', compact('flock', 'livePopulation', 'alreadyHarvested', 'defaultMarketPrice', 'defaultFeedPrice'));
     }
 
     /**
-     * Store a newly created harvest record and automatically calculate finances & close flock.
+     * Store a newly created harvest record and calculate finances (supports partial thinning or final close).
      */
     public function store(Request $request, Flock $flock)
     {
         $this->authorizeActiveHarvest($flock);
 
+        $totalMortality = $flock->dailyRecords()->sum('mortality');
+        $totalCulling = $flock->dailyRecords()->sum('culling');
+        $alreadyHarvested = (int) $flock->harvests()->sum('total_chickens_sold');
+        $availableChickens = max(0, $flock->initial_population - $totalMortality - $totalCulling - $alreadyHarvested);
+
         $validated = $request->validate([
             'harvest_date' => 'required|date',
+            'chickens_sold' => ['nullable', 'integer', 'min:1', 'max:' . max(1, $availableChickens)],
             'total_weight_kg' => 'required|numeric|min:0.01',
             'chicken_price_per_kg' => 'required|numeric|min:0',
             'feed_price_per_kg' => 'required|numeric|min:0',
             'buyer_name' => 'required|string|max:255',
+            'close_flock' => 'nullable|boolean',
         ]);
 
-        $totalMortality = $flock->dailyRecords()->sum('mortality');
-        $totalCulling = $flock->dailyRecords()->sum('culling');
-        $totalChickensSold = max(0, $flock->initial_population - $totalMortality - $totalCulling);
+        $shouldCloseFlock = !$request->has('close_flock') || $request->boolean('close_flock');
+        $totalChickensSold = isset($validated['chickens_sold']) && $validated['chickens_sold'] !== null
+            ? (int) $validated['chickens_sold']
+            : $availableChickens;
 
         $this->recordHarvestAndCloseFlock($flock, [
             'harvest_date' => $validated['harvest_date'],
@@ -160,10 +191,13 @@ class HarvestController extends Controller
             'buyer_name' => $validated['buyer_name'],
             'chicken_price_per_kg' => (float) $validated['chicken_price_per_kg'],
             'feed_price_per_kg' => (float) $validated['feed_price_per_kg'],
-        ]);
+        ], $shouldCloseFlock);
 
-        return redirect()->route('flocks.show', $flock)
-            ->with('success', 'Data panen berhasil disimpan & tercatat di Arus Kas. Kandang ini sekarang ditutup.');
+        $msg = $shouldCloseFlock
+            ? 'Data panen akhir berhasil disimpan & tercatat di Arus Kas. Kandang ini sekarang ditutup.'
+            : 'Panen penjarangan berhasil disimpan & tercatat di Arus Kas. Siklus kandang tetap aktif.';
+
+        return redirect()->route('flocks.show', $flock)->with('success', $msg);
     }
 
     /**
@@ -175,7 +209,8 @@ class HarvestController extends Controller
 
         $totalMortality = $flock->dailyRecords()->sum('mortality');
         $totalCulling = $flock->dailyRecords()->sum('culling');
-        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling);
+        $alreadyHarvested = (int) $flock->harvests()->sum('total_chickens_sold');
+        $livePopulation = max(0, $flock->initial_population - $totalMortality - $totalCulling - $alreadyHarvested);
 
         $latestRecord = $flock->dailyRecords()->orderBy('record_date', 'desc')->first();
         $avgWeightGram = $latestRecord->average_weight_gram ?? 1600;
@@ -225,8 +260,8 @@ class HarvestController extends Controller
         $docPrice = (float) (SystemSetting::where('key', 'doc_price')->value('value') ?? 8000);
         $totalDocCost = $flock->initial_population * $docPrice;
         
-        $totalFeedCost = $harvest ? $harvest->total_feed_cost : 0;
-        $grossRevenue = $harvest ? $harvest->gross_revenue : 0;
+        $totalFeedCost = (float) $flock->harvests->sum('total_feed_cost');
+        $grossRevenue = (float) $flock->harvests->sum('gross_revenue');
         
         // OPEX (Labor)
         $laborCost = (float) Payroll::where('flock_id', $flock->id)->sum('total_paid');

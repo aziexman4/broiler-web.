@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/flocks/{flock}/feed-requests', [\App\Http\Controllers\FeedRequestController::class, 'store'])->name('feed_requests.store');
     Route::post('/feed-requests/{feedRequest}/ship', [\App\Http\Controllers\FeedRequestController::class, 'ship'])->name('feed_requests.ship');
     Route::post('/feed-requests/{feedRequest}/receive', [\App\Http\Controllers\FeedRequestController::class, 'receive'])->name('feed_requests.receive');
+    Route::post('/feed-requests/{feedRequest}/reject', [\App\Http\Controllers\FeedRequestController::class, 'reject'])->name('feed_requests.reject');
 
     // ==========================================
     // ENTERPRISE MODULES (Owner Only)

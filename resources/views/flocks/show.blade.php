@@ -437,20 +437,45 @@
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-400 border border-orange-200 dark:border-orange-800">⏳ Pending</span>
                                             @elseif($request->status === 'shipped')
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-800">🚚 Dikirim</span>
+                                            @elseif($request->status === 'rejected')
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">✖ Ditolak / Batal</span>
                                             @else
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-400 border border-green-200 dark:border-green-800">✅ Diterima</span>
                                             @endif
                                         </td>
                                         <td class="py-3 px-4 text-right">
                                             @if($flock->status === 'active' && $request->status === 'pending' && Auth::user()->isOwner())
-                                                <form action="{{ route('feed_requests.ship', $request) }}" method="POST" class="inline-block"
-                                                      data-confirm-title="Setujui & Kirim Pakan?"
-                                                      data-confirm-message="Setujui permintaan pakan ini dan kirimkan stok ke gudang kandang?"
-                                                      data-confirm-button="Ya, Kirim Pakan"
-                                                      data-confirm-tone="primary">
+                                                <div class="inline-flex items-center gap-1.5">
+                                                    <form action="{{ route('feed_requests.ship', $request) }}" method="POST" class="inline-block"
+                                                          data-confirm-title="Setujui & Kirim Pakan?"
+                                                          data-confirm-message="Setujui permintaan pakan ini dan kirimkan stok ke gudang kandang?"
+                                                          data-confirm-button="Ya, Kirim Pakan"
+                                                          data-confirm-tone="primary">
+                                                        @csrf
+                                                        <button type="submit" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition">
+                                                            Setujui &amp; Kirim
+                                                        </button>
+                                                    </form>
+                                                    <form action="{{ route('feed_requests.reject', $request) }}" method="POST" class="inline-block"
+                                                          data-confirm-title="Tolak Permintaan Pakan?"
+                                                          data-confirm-message="Permintaan pakan ini akan ditandai Ditolak tanpa memotong stok gudang pusat."
+                                                          data-confirm-button="Ya, Tolak"
+                                                          data-confirm-tone="danger">
+                                                        @csrf
+                                                        <button type="submit" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-semibold text-xs rounded-lg transition">
+                                                            Tolak
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @elseif($flock->status === 'active' && $request->status === 'pending' && !Auth::user()->isOwner())
+                                                <form action="{{ route('feed_requests.reject', $request) }}" method="POST" class="inline-block"
+                                                      data-confirm-title="Batalkan Permintaan Pakan?"
+                                                      data-confirm-message="Batalkan permintaan pakan yang belum diproses ini?"
+                                                      data-confirm-button="Ya, Batalkan"
+                                                      data-confirm-tone="danger">
                                                     @csrf
-                                                    <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded shadow transition">
-                                                        Setujui & Kirim
+                                                    <button type="submit" class="px-2.5 py-1 bg-rose-50 dark:bg-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-semibold text-xs rounded-lg transition">
+                                                        Batalkan
                                                     </button>
                                                 </form>
                                             @elseif($flock->status === 'active' && $request->status === 'shipped' && !Auth::user()->isOwner())
@@ -462,6 +487,8 @@
                                                 </form>
                                             @elseif($request->status === 'completed')
                                                 <span class="text-xs text-slate-500 font-medium">Selesai</span>
+                                            @elseif($request->status === 'rejected')
+                                                <span class="text-xs text-rose-500 dark:text-rose-400 font-medium">Dibatalkan</span>
                                             @elseif($flock->status !== 'active')
                                                 <span class="text-xs text-slate-400 font-medium">Terkunci</span>
                                             @else

@@ -670,6 +670,9 @@ class FarmDataSeeder extends Seeder
             // -------------------------------------------------------------
             // 4. OVK INVENTORY (Balanced In/Out Stock + Synced CashFlow)
             // -------------------------------------------------------------
+            $hanauActiveId = Flock::where('name', 'Kandang Hanau - Siklus 4 (Aktif)')->value('id');
+            $seruyanActiveId = Flock::where('name', 'Kandang Seruyan Utama - Siklus 4 (Aktif)')->value('id');
+
             $ovkItems = [
                 ['days_ago' => 270, 'name' => 'Vita Stress 100gr', 'category' => 'obat', 'type' => 'in', 'qty' => 80, 'unit' => 'sachet', 'price' => 1200000, 'desc' => 'Pengadaan vitamin anti-stres awal tahun'],
                 ['days_ago' => 268, 'name' => 'Vaksin ND Hitchner B1', 'category' => 'vaksin', 'type' => 'in', 'qty' => 30, 'unit' => 'botol', 'price' => 1800000, 'desc' => 'Pengadaan vaksinasi ND awal siklus'],
@@ -679,13 +682,14 @@ class FarmDataSeeder extends Seeder
                 ['days_ago' => 140, 'name' => 'Vaksin Gumboro A2', 'category' => 'vaksin', 'type' => 'in', 'qty' => 24, 'unit' => 'botol', 'price' => 1520000, 'desc' => 'Pengadaan vaksin gumboro fase starter'],
                 ['days_ago' => 95, 'name' => 'Formades Desinfektan', 'category' => 'kimia', 'type' => 'out', 'qty' => 12, 'unit' => 'liter', 'price' => null, 'desc' => 'Sterilisasi istirahat kandang menuju Siklus 3'],
                 ['days_ago' => 40, 'name' => 'Antiseptik Medisep', 'category' => 'kimia', 'type' => 'in', 'qty' => 18, 'unit' => 'liter', 'price' => 810000, 'desc' => 'Pengadaan antiseptik sanitasi siklus aktif'],
-                ['days_ago' => 15, 'name' => 'Vaksin Gumboro A2', 'category' => 'vaksin', 'type' => 'out', 'qty' => 9, 'unit' => 'botol', 'price' => null, 'desc' => 'Vaksinasi gumboro Kandang Seruyan Utama Siklus 4'],
-                ['days_ago' => 3, 'name' => 'Vita Stress 100gr', 'category' => 'obat', 'type' => 'out', 'qty' => 12, 'unit' => 'sachet', 'price' => null, 'desc' => 'Pemberian vitamin brooding Kandang Hanau Siklus 4'],
+                ['days_ago' => 15, 'flock_id' => $seruyanActiveId, 'name' => 'Vaksin Gumboro A2', 'category' => 'vaksin', 'type' => 'out', 'qty' => 9, 'unit' => 'botol', 'price' => null, 'desc' => 'Vaksinasi gumboro Kandang Seruyan Utama Siklus 4'],
+                ['days_ago' => 3, 'flock_id' => $hanauActiveId, 'name' => 'Vita Stress 100gr', 'category' => 'obat', 'type' => 'out', 'qty' => 12, 'unit' => 'sachet', 'price' => null, 'desc' => 'Pemberian vitamin brooding Kandang Hanau Siklus 4'],
             ];
 
             foreach ($ovkItems as $ovk) {
                 $ovkDate = $today->copy()->subDays($ovk['days_ago'])->toDateString();
                 OvkInventory::create([
+                    'flock_id' => $ovk['flock_id'] ?? null,
                     'record_date' => $ovkDate,
                     'item_name' => $ovk['name'],
                     'category' => $ovk['category'],

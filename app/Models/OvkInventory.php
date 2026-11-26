@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OvkInventory extends Model
 {
@@ -23,6 +24,7 @@ class OvkInventory extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'flock_id',
         'record_date',
         'item_name',
         'category',
@@ -45,5 +47,10 @@ class OvkInventory extends Model
             'quantity' => 'decimal:2',
             'total_price' => 'integer',
         ];
+    }
+
+    public function flock(): BelongsTo
+    {
+        return $this->belongsTo(Flock::class);
     }
 }
