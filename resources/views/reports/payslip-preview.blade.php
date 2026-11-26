@@ -45,7 +45,7 @@
     <div class="section-title">Rincian Komponen Gaji</div>
     <table class="data-table">
         <tr style="background:#f0fdf4">
-            <td colspan="2" class="font-bold text-emerald" style="text-transform:uppercase">A. PENDAPATAN</td>
+            <td colspan="2" class="font-bold text-emerald" style="text-transform:uppercase">RINCIAN PENDAPATAN</td>
         </tr>
         <tr>
             <td style="width:70%;padding-left:20px">Gaji Pokok (Base Salary)</td>
@@ -61,14 +61,6 @@
                 @endif
             </td>
             <td class="text-right {{ $payroll->bonus_amount > 0 ? 'text-emerald font-bold' : '' }}">Rp {{ number_format($payroll->bonus_amount, 0, ',', '.') }}</td>
-        </tr>
-
-        <tr style="background:#fff1f2">
-            <td colspan="2" class="font-bold text-rose" style="text-transform:uppercase">B. POTONGAN</td>
-        </tr>
-        <tr>
-            <td style="padding-left:20px">Potongan / Denda</td>
-            <td class="text-right">Rp 0</td>
         </tr>
 
         <tr style="background:#f0fdf4;border-top:2px solid #059669">
