@@ -78,26 +78,30 @@
                     </div>
                 </div>
 
-                <!-- Card 3: Saldo Kas -->
+                <!-- Card 3: Saldo Kas Riil -->
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 p-6 relative overflow-hidden">
                     <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full opacity-60 pointer-events-none"></div>
-                    <div class="flex items-center justify-between">
-                        <div>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                {{ $isFiltered ? 'Saldo Kas Periode' : 'Saldo Kas Saat Ini' }}
+                                Saldo Kas Riil Saat Ini
                             </p>
-                            <h3 class="text-2xl font-extrabold {{ $balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400' }} mt-2">
-                                Rp {{ number_format($balance, 0, ',', '.') }}
+                            <h3 class="text-2xl font-extrabold tabular-nums truncate {{ ($current_real_balance ?? $balance) >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400' }} mt-2">
+                                Rp {{ number_format($current_real_balance ?? $balance, 0, ',', '.') }}
                             </h3>
                         </div>
-                        <div class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl">
+                        <div class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl shrink-0">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </div>
                     </div>
-                    <div class="mt-4 flex items-center text-xs text-slate-400 dark:text-slate-500">
-                        <span>Selisih akumulasi pemasukan &amp; pengeluaran</span>
+                    <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
+                        @if($isFiltered)
+                            <div>Saldo akhir periode: <strong class="text-slate-700 dark:text-slate-200">Rp {{ number_format($closing_balance ?? $balance, 0, ',', '.') }}</strong> (awal: Rp {{ number_format($opening_balance ?? 0, 0, ',', '.') }})</div>
+                        @else
+                            <span>Uang tunai riil dari seluruh pemasukan &minus; pengeluaran</span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -182,6 +186,7 @@
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 px-6 py-3.5">Keterangan Transaksi</th>
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 px-6 py-3.5">Jenis</th>
                                 <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 px-6 py-3.5 text-right">Nominal (Rp)</th>
+                                <th scope="col" class="sticky top-0 bg-slate-100 dark:bg-slate-700 z-10 border-b border-slate-200 dark:border-slate-600 px-6 py-3.5 text-right">Saldo Kas Saat Itu</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200/70 dark:divide-slate-700">
@@ -204,13 +209,16 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 text-right font-extrabold whitespace-nowrap {{ $record->type === 'in' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                                    <td class="px-6 py-4 text-right font-extrabold whitespace-nowrap tabular-nums {{ $record->type === 'in' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
                                         {{ $record->type === 'in' ? '+' : '-' }} Rp {{ number_format($record->amount, 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-bold whitespace-nowrap tabular-nums {{ ($record->running_balance ?? 0) >= 0 ? 'text-slate-800 dark:text-slate-100' : 'text-rose-600 dark:text-rose-400' }}">
+                                        Rp {{ number_format($record->running_balance ?? 0, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-10 text-center text-slate-400 dark:text-slate-500">
+                                    <td colspan="5" class="px-6 py-10 text-center text-slate-400 dark:text-slate-500">
                                         <svg class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                         </svg>

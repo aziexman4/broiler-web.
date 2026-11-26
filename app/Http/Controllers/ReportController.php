@@ -143,6 +143,9 @@ class ReportController extends Controller
             'total_in' => $summary['total_in'],
             'total_out' => $summary['total_out'],
             'balance' => $summary['balance'],
+            'opening_balance' => $summary['opening_balance'],
+            'closing_balance' => $summary['closing_balance'],
+            'current_real_balance' => $summary['current_real_balance'],
             'activeFilterType' => $summary['activeFilterType'],
             'periodLabel' => $summary['periodLabel'],
         ];

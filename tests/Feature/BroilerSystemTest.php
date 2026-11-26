@@ -94,6 +94,9 @@ class BroilerSystemTest extends TestCase
         $responseMonth->assertViewHas('total_in', 3500000);
         $responseMonth->assertViewHas('total_out', 2000000);
         $responseMonth->assertViewHas('balance', 1500000);
+        $responseMonth->assertViewHas('opening_balance', 0);
+        $responseMonth->assertViewHas('closing_balance', 1500000);
+        $responseMonth->assertViewHas('current_real_balance', 3000000);
 
         // Mode: Range (August 2026) ignores stray month
         $responseRange = $this->actingAs($owner)->get(route('reports.cash-flow', [
@@ -106,6 +109,10 @@ class BroilerSystemTest extends TestCase
         $responseRange->assertOk();
         $responseRange->assertViewHas('total_in', 1500000);
         $responseRange->assertViewHas('total_out', 0);
+        $responseRange->assertViewHas('opening_balance', 1500000);
+        $responseRange->assertViewHas('closing_balance', 3000000);
+        $responseRange->assertViewHas('current_real_balance', 3000000);
+        $responseRange->assertSee('Saldo Awal Bawaan Sebelum Periode');
         $responseRange->assertSee('Periode: 01 Agt 2026 — 31 Agt 2026');
     }
 

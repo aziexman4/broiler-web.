@@ -60,6 +60,37 @@ class CashFlow extends Model
         $totalOut = (int) (clone $query)->where('type', 'out')->sum('amount');
         $balance = $totalIn - $totalOut;
 
+        $periodStartDate = null;
+        if ($filter['activeFilterType'] === 'month' && $filter['month'] !== null) {
+            $periodStartDate = \Carbon\Carbon::createFromFormat('!Y-m', $filter['month'])
+                ->startOfMonth()
+                ->toDateString();
+        } elseif ($filter['activeFilterType'] === 'range' && $filter['startDate'] !== null) {
+            $periodStartDate = $filter['startDate'];
+        }
+
+        $openingBalance = 0;
+        if ($periodStartDate !== null) {
+            $prevIn = (int) static::query()
+                ->whereDate('transaction_date', '<', $periodStartDate)
+                ->where('type', 'in')
+                ->sum('amount');
+            $prevOut = (int) static::query()
+                ->whereDate('transaction_date', '<', $periodStartDate)
+                ->where('type', 'out')
+                ->sum('amount');
+            $openingBalance = $prevIn - $prevOut;
+        }
+        $closingBalance = $openingBalance + $balance;
+
+        $running = 0;
+        $runningBalanceMap = [];
+        foreach (static::query()->orderBy('transaction_date', 'asc')->orderBy('id', 'asc')->get(['id', 'type', 'amount']) as $row) {
+            $running += $row->type === 'in' ? (int) $row->amount : -(int) $row->amount;
+            $runningBalanceMap[$row->id] = $running;
+        }
+        $currentRealBalance = $running;
+
         if ($perPage !== null) {
             $maxDate = (clone $query)->max('transaction_date');
             $minDate = (clone $query)->min('transaction_date');
@@ -71,9 +102,15 @@ class CashFlow extends Model
                 : new \Illuminate\Database\Eloquent\Collection();
 
             $records = $orderedQuery->paginate($perPage)->withQueryString();
+            $records->getCollection()->transform(function ($item) use ($runningBalanceMap) {
+                $item->running_balance = $runningBalanceMap[$item->id] ?? 0;
+                return $item;
+            });
             $periodSource = $boundRecords;
         } else {
-            $records = $orderedQuery->get();
+            $records = $orderedQuery->get()->each(function ($item) use ($runningBalanceMap) {
+                $item->running_balance = $runningBalanceMap[$item->id] ?? 0;
+            });
             $periodSource = $records;
         }
 
@@ -90,6 +127,9 @@ class CashFlow extends Model
             'total_in' => $totalIn,
             'total_out' => $totalOut,
             'balance' => $balance,
+            'opening_balance' => $openingBalance,
+            'closing_balance' => $closingBalance,
+            'current_real_balance' => $currentRealBalance,
             'activeFilterType' => $filter['activeFilterType'],
             'periodLabel' => $periodLabel,
             'month' => $filter['month'],
