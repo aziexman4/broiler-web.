@@ -118,26 +118,26 @@
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <!-- Top Header Bar -->
                 <header class="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 z-10 transition-colors duration-200 shadow-xs">
-                    <div class="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                    <div class="min-h-16 px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
                         <!-- Mobile Hamburger Button -->
-                        <div class="flex items-center md:hidden">
+                        <div class="flex items-center md:hidden min-w-0">
                             <button @click="sidebarOpen = !sidebarOpen" aria-label="Buka menu navigasi" class="p-2 -ms-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors">
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
-                            <span class="ms-2 font-extrabold text-slate-900 dark:text-white">Smart<span class="text-emerald-600 dark:text-emerald-400">Coop</span></span>
+                            <span class="ms-2 font-extrabold text-slate-900 dark:text-white truncate">Smart<span class="text-emerald-600 dark:text-emerald-400">Coop</span></span>
                         </div>
 
                         <!-- Top Header Title/Context -->
-                        <div class="hidden md:block flex-1">
+                        <div class="hidden md:block flex-1 min-w-0">
                             @isset($header)
                                 {{ $header }}
                             @endisset
                         </div>
 
                         <!-- User Profile Dropdown -->
-                        <div class="flex items-center space-x-3 ms-auto">
+                        <div class="flex items-center gap-2.5 sm:gap-3 ms-auto flex-shrink-0">
                             <!-- 3-Mode Theme Switcher (Light / Dark / System) -->
                             <x-theme-switcher />
 
@@ -191,7 +191,7 @@
                     </div>
                     
                     <!-- Global Credit Footer -->
-                    <footer class="mt-auto py-6 px-6 sm:px-8 text-center sm:text-right border-t border-slate-200/70 dark:border-slate-800/60 mt-8">
+                    <footer class="mt-auto py-4 px-4 sm:px-6 lg:px-8 text-center sm:text-right border-t border-slate-200/70 dark:border-slate-800/60">
                         <p class="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
                             SmartCoop &bull; Sistem Manajemen Peternakan Broiler Hanau &bull; PKL {{ date('Y') }}
                         </p>

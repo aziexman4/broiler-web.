@@ -13,8 +13,8 @@
         $isFiltered = isset($activeFilterType) && $activeFilterType !== 'all';
     @endphp
 
-    <div class="py-12" x-data="feedInventoryDashboard()" @kpi-updated.window="updateKPIs($event.detail)">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-6" x-data="feedInventoryDashboard()" @kpi-updated.window="updateKPIs($event.detail)">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <!-- Success & Error Alert Notifications -->
             <x-flash-alerts />

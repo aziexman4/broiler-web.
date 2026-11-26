@@ -22,8 +22,8 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div x-data="analyticsCoopFilter()" class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-6">
+        <div x-data="analyticsCoopFilter()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <!-- Coop Unit Filter & Sort Bar -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 px-5 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">

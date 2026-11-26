@@ -35,7 +35,7 @@
 @endphp
 
 <!-- Desktop Sidebar (Adaptive Light / Dark Agritech) -->
-<aside class="hidden md:flex md:flex-col md:w-64 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-r border-slate-200/90 dark:border-slate-800 flex-shrink-0 transition-colors duration-200">
+<aside class="hidden md:flex md:flex-col md:w-60 lg:w-64 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-r border-slate-200/90 dark:border-slate-800 flex-shrink-0 transition-colors duration-200">
     <!-- Sidebar Header / Branding -->
     <div class="h-16 flex items-center px-6 bg-emerald-50/40 dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-800 transition-colors duration-200">
         <a href="{{ route('dashboard') }}" class="flex items-center space-x-3 group">
@@ -50,7 +50,7 @@
     </div>
 
     <!-- Sidebar Navigation Links -->
-    <div class="flex-1 flex flex-col justify-between overflow-y-auto px-4 py-6 space-y-6">
+    <div class="flex-1 flex flex-col justify-between overflow-y-auto px-3 py-4 space-y-5">
         <nav class="space-y-6">
             <!-- Menu Utama Section -->
             <div class="space-y-1.5">

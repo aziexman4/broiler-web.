@@ -24,7 +24,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             @if (session('error'))
@@ -40,42 +40,42 @@
                 <!-- Financial & Enterprise KPIs (Owner Only) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Total Kas -->
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 min-w-0">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Saldo Kas</div>
-                        <div class="mt-2 text-2xl font-extrabold {{ ($financialMetrics['cash_balance'] ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
+                        <div class="mt-2 text-xl xl:text-2xl font-extrabold tabular-nums truncate {{ ($financialMetrics['cash_balance'] ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' }}">
                             Rp {{ number_format($financialMetrics['cash_balance'] ?? 0, 0, ',', '.') }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
                             Masuk: Rp {{ number_format($financialMetrics['total_cash_in'] ?? 0, 0, ',', '.') }}
                         </div>
                     </div>
 
                     <!-- Estimasi Pendapatan -->
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 min-w-0">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Estimasi Pendapatan</div>
-                        <div class="mt-2 text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                        <div class="mt-2 text-xl xl:text-2xl font-extrabold tabular-nums truncate text-indigo-600 dark:text-indigo-400">
                             Rp {{ number_format($financialMetrics['estimated_revenue'] ?? 0, 0, ',', '.') }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
                             Proyeksi {{ number_format($financialMetrics['active_flocks_count'] ?? 0) }} siklus aktif ({{ number_format($financialMetrics['total_active_population'] ?? 0) }} ekor)
                         </div>
                     </div>
 
                     <!-- Laba Bersih -->
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 min-w-0">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Laba Bersih Panen</div>
-                        <div class="mt-2 text-2xl font-extrabold {{ ($financialMetrics['net_profit'] ?? 0) >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400' }}">
+                        <div class="mt-2 text-xl xl:text-2xl font-extrabold tabular-nums truncate {{ ($financialMetrics['net_profit'] ?? 0) >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400' }}">
                             Rp {{ number_format($financialMetrics['net_profit'] ?? 0, 0, ',', '.') }}
                         </div>
-                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
                             Estimasi berjalan: Rp {{ number_format($financialMetrics['estimated_active_net_profit'] ?? 0, 0, ',', '.') }}
                         </div>
                     </div>
 
                     <!-- Ringkasan Operasional Kandang -->
-                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 min-w-0">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status Operasional</div>
-                        <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
+                        <div class="mt-2 text-xl xl:text-2xl font-extrabold tabular-nums text-slate-900 dark:text-white">
                             {{ number_format($financialMetrics['active_flocks_count'] ?? 0) }} <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Aktif</span>
                         </div>
                         <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">

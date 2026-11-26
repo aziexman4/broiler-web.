@@ -5,8 +5,8 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" x-data="liveSearch()">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-6" x-data="liveSearch()">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-slate-800 overflow-hidden shadow-md sm:rounded-2xl border border-slate-200 dark:border-slate-700">
                 <div class="p-6 text-slate-900 dark:text-slate-100">
                     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

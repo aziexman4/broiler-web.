@@ -39,12 +39,12 @@
         </div>
 
         <!-- Right Side: Register Form -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center bg-white dark:bg-slate-900 p-6 sm:p-12 lg:p-16 relative overflow-y-auto max-h-screen transition-colors">
+        <div class="w-full lg:w-1/2 flex items-center justify-center bg-white dark:bg-slate-900 p-6 sm:p-10 lg:p-10 xl:p-14 relative overflow-y-auto max-h-screen transition-colors">
             <div class="absolute top-5 right-5 sm:top-6 sm:right-8 z-20">
                 <x-theme-switcher />
             </div>
 
-            <div class="w-full max-w-md py-8">
+            <div class="w-full max-w-md py-6 lg:py-2">
 
                 <!-- Mobile Logo Header -->
                 <div class="lg:hidden flex items-center justify-center mb-8 space-x-2.5">
