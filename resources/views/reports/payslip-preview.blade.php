@@ -55,9 +55,9 @@
             <td style="padding-left:20px">
                 Bonus Performa Panen
                 @if($payroll->bonus_amount > 0)
-                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#dcfce7;color:#166534;margin-left:6px">IP > 300 ✓</span>
+                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#dcfce7;color:#166534;margin-left:6px">IP ≥ 300 ✓</span>
                 @else
-                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:6px">IP ≤ 300</span>
+                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:6px">IP < 300</span>
                 @endif
             </td>
             <td class="text-right {{ $payroll->bonus_amount > 0 ? 'text-emerald font-bold' : '' }}">Rp {{ number_format($payroll->bonus_amount, 0, ',', '.') }}</td>

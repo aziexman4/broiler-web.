@@ -76,7 +76,11 @@ class DashboardController extends Controller
             $realizedNetProfit = $realizedOperatingProfit - $realizedLaborCost;
             $realizedRevenue = (float) Harvest::sum('gross_revenue');
             $closedFlocksCount = Flock::where('status', 'closed')->count();
-            $pendingFeedRequestsCount = FeedRequest::where('status', 'pending')->count();
+            $pendingFeedRequests = FeedRequest::with('flock.coop')
+                ->where('status', 'pending')
+                ->latest()
+                ->get();
+            $pendingFeedRequestsCount = $pendingFeedRequests->count();
 
             $financialMetrics = [
                 'total_cash_in' => $totalCashIn,
@@ -95,6 +99,7 @@ class DashboardController extends Controller
             return view('dashboard', [
                 'financialMetrics' => $financialMetrics,
                 'activeFlockSummaries' => $activeFlockSummaries,
+                'pendingFeedRequests' => $pendingFeedRequests,
                 'latestPayroll' => null,
                 'workerStats' => null,
             ]);

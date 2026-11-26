@@ -106,7 +106,7 @@ class BroilerSystemTest extends TestCase
         $responseRange->assertOk();
         $responseRange->assertViewHas('total_in', 1500000);
         $responseRange->assertViewHas('total_out', 0);
-        $responseRange->assertSee('Periode: 01 Agu 2026 — 31 Agu 2026');
+        $responseRange->assertSee('Periode: 01 Agt 2026 — 31 Agt 2026');
     }
 
     public function test_feed_inventory_period_filter_and_audit_report_button_placement(): void

@@ -123,8 +123,44 @@
                     </div>
                 </form>
 
+                @if(app()->isLocal())
+                    <!-- Akses Cepat Akun Demo PKL (Hanya tampil di environment local) -->
+                    <div class="mt-8 rounded-2xl border border-indigo-200/80 dark:border-indigo-800/70 bg-indigo-50/70 dark:bg-slate-800/80 p-4">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                                Akses Cepat Demo PKL (Lokal)
+                            </span>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-white/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-indigo-100 dark:border-slate-600">
+                                Pass: password
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            @php
+                                $demoAccounts = [
+                                    ['label' => 'Owner / Pemilik', 'sub' => 'Kontrol Penuh', 'email' => 'owner@smartcoop.com'],
+                                    ['label' => 'Harries', 'sub' => 'Kandang Hanau', 'email' => 'harries@smartcoop.com'],
+                                    ['label' => 'Danang', 'sub' => 'Kandang Seruyan Utama', 'email' => 'danang@smartcoop.com'],
+                                    ['label' => 'Mujawiri', 'sub' => 'Kandang Plasma C', 'email' => 'mujawiri@smartcoop.com'],
+                                ];
+                            @endphp
+                            @foreach($demoAccounts as $demo)
+                                <button type="button"
+                                    onclick="document.getElementById('email').value='{{ $demo['email'] }}';document.getElementById('password').value='password';document.getElementById('email').focus();"
+                                    class="text-left rounded-xl px-3 py-2 bg-white dark:bg-slate-900/70 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/40 border border-slate-200/80 dark:border-slate-700 transition-colors group">
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+                                        {{ $demo['label'] }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                        {{ $demo['sub'] }} &bull; {{ $demo['email'] }}
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Footer Access Info -->
-                <div class="mt-12 text-center text-sm text-slate-500 dark:text-slate-400 font-medium">
+                <div class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 font-medium">
                     Pekerja baru?
                     @if(config('app.allow_public_registration'))
                         <a href="{{ route('register') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-bold ms-1 transition-colors">

@@ -143,6 +143,7 @@
             </div>
 
                 @can('manage-enterprise')
+                @if($flock->status === 'active')
                 <!-- Individual P&L Forecasting Widget (Owner Only) -->
                 <div class="bg-gradient-to-br from-indigo-900 to-blue-900 text-white p-6 rounded-2xl shadow-md border border-indigo-800">
                     <div class="flex justify-between items-start mb-4">
@@ -172,6 +173,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
                 @endcan
 
                 <!-- Live BEP Target Tracker Chart -->
@@ -232,7 +234,7 @@
                             <div class="text-2xl font-black {{ $latestHarvest->net_profit >= 0 ? 'text-green-400' : 'text-red-400' }} mt-1">
                                 Rp {{ number_format($latestHarvest->net_profit, 0, ',', '.') }}
                             </div>
-                            <div class="text-xs text-slate-400 mt-0.5">Gross Revenue - Biaya Pakan</div>
+                            <div class="text-xs text-slate-400 mt-0.5">Gross Revenue - Biaya Pakan - Modal DOC</div>
                         </div>
 
                         <div>

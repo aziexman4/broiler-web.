@@ -79,10 +79,51 @@
                             {{ number_format($financialMetrics['active_flocks_count'] ?? 0) }} <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Aktif</span>
                         </div>
                         <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                            {{ number_format($financialMetrics['closed_flocks_count'] ?? 0) }} tutup buku &bull; {{ number_format($financialMetrics['pending_feed_requests_count'] ?? 0) }} permintaan pakan pending
+                            {{ number_format($financialMetrics['closed_flocks_count'] ?? 0) }} tutup buku &bull;
+                            @if(($pendingFeedRequests ?? collect())->isNotEmpty())
+                                <a href="#pending-feed-shortcuts" class="font-semibold text-amber-600 dark:text-amber-400 hover:underline">{{ number_format($financialMetrics['pending_feed_requests_count'] ?? 0) }} permintaan pakan pending</a>
+                            @else
+                                {{ number_format($financialMetrics['pending_feed_requests_count'] ?? 0) }} permintaan pakan pending
+                            @endif
                         </div>
                     </div>
                 </div>
+
+                @if(($pendingFeedRequests ?? collect())->isNotEmpty())
+                    <!-- Quick Shortcuts for Pending Feed Requests (Owner Only) -->
+                    <div id="pending-feed-shortcuts" class="bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 rounded-2xl p-4 sm:p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
+                                    Permintaan Pakan Menunggu Persetujuan ({{ $pendingFeedRequests->count() }})
+                                </h3>
+                            </div>
+                            <span class="text-xs text-amber-700 dark:text-amber-400">Klik kandang untuk kirim / tolak pakan langsung</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            @foreach($pendingFeedRequests as $pendingReq)
+                                @if($pendingReq->flock)
+                                    <a href="{{ route('flocks.show', $pendingReq->flock) }}"
+                                       class="flex items-center justify-between gap-3 rounded-xl bg-white dark:bg-slate-800/90 px-4 py-3 border border-amber-200/80 dark:border-amber-800/60 hover:border-amber-400 dark:hover:border-amber-600 shadow-xs transition group">
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-sm text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                                {{ $pendingReq->flock->name }}
+                                            </div>
+                                            <div class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                                {{ $pendingReq->flock->coop->name ?? 'Unit Kandang' }} &bull;
+                                                <span class="font-semibold text-amber-700 dark:text-amber-300">{{ $pendingReq->feed_type }} ({{ number_format($pendingReq->amount_kg, 0, ',', '.') }} kg)</span>
+                                            </div>
+                                        </div>
+                                        <span class="shrink-0 px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 text-xs font-bold group-hover:bg-amber-200 dark:group-hover:bg-amber-900 transition">
+                                            Proses &rarr;
+                                        </span>
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 <!-- Owner Active Cycles Table -->
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 overflow-hidden">

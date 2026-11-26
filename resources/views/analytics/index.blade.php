@@ -20,7 +20,38 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div x-data="analyticsCoopFilter()" class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+
+            <!-- Coop Unit Filter Bar -->
+            <div class="print:hidden bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Filter Unit Kandang</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200" x-text="filteredRecords.length">{{ count($analyticsData) }}</span> siklus tutup buku</div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button"
+                        @click="selectCoop('all')"
+                        :class="selectedCoopId === 'all'
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                        class="px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition">
+                        Semua Kandang ({{ count($analyticsData) }})
+                    </button>
+                    @foreach($coops ?? [] as $coop)
+                        @php
+                            $coopCycleCount = collect($analyticsData)->where('coop_id', $coop->id)->count();
+                        @endphp
+                        <button type="button"
+                            @click="selectCoop('{{ $coop->id }}')"
+                            :class="String(selectedCoopId) === '{{ $coop->id }}'
+                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                : 'bg-slate-100 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700'"
+                            class="px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition">
+                            {{ $coop->name }} ({{ $coopCycleCount }})
+                        </button>
+                    @endforeach
+                </div>
+            </div>
 
             <!-- Global KPI Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -35,12 +66,9 @@
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rata-rata IP Peternakan</p>
                                 <h3 class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">
-                                    {{ number_format($farmAverages['ip'], 2) }}
-                                    @if($farmAverages['ip'] >= 300)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 ml-2 align-middle">Excellent</span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 ml-2 align-middle">Good</span>
-                                    @endif
+                                    <span x-text="formatDecimal(avgIp, 2)">{{ number_format($farmAverages['ip'], 2) }}</span>
+                                    <span x-show="avgIp >= 300" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 ml-2 align-middle">Excellent</span>
+                                    <span x-show="avgIp < 300" x-cloak class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 ml-2 align-middle">Good</span>
                                 </h3>
                             </div>
                         </div>
@@ -57,7 +85,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rata-rata FCR</p>
-                                <h3 class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">{{ number_format($farmAverages['fcr'], 3) }}</h3>
+                                <h3 class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white" x-text="formatDecimal(avgFcr, 3)">{{ number_format($farmAverages['fcr'], 3) }}</h3>
                             </div>
                         </div>
                     </div>
@@ -73,7 +101,7 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rata-rata Tingkat Kehidupan</p>
-                                <h3 class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">{{ number_format($farmAverages['livability'], 2) }}%</h3>
+                                <h3 class="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white"><span x-text="formatDecimal(avgLivability, 2)">{{ number_format($farmAverages['livability'], 2) }}</span>%</h3>
                             </div>
                         </div>
                     </div>
@@ -114,10 +142,10 @@
                         </thead>
                         <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                             @forelse($analyticsData as $data)
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition duration-150">
+                            <tr x-show="selectedCoopId === 'all' || String(selectedCoopId) === '{{ $data['coop_id'] }}'" class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition duration-150">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="font-bold text-sm text-slate-900 dark:text-white">{{ $data['flock_name'] }}</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Umur Panen: {{ $data['harvest_age'] }} Hari</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $data['coop_name'] }} &bull; Umur Panen: {{ $data['harvest_age'] }} Hari</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-slate-900 dark:text-slate-200">{{ $data['breed'] }}</div>
@@ -155,6 +183,13 @@
                                 </td>
                             </tr>
                             @endforelse
+                            @if(count($analyticsData) > 0)
+                            <tr x-show="filteredRecords.length === 0" x-cloak>
+                                <td colspan="6" class="px-6 py-10 text-center text-slate-500 dark:text-slate-400">
+                                    Belum ada siklus panen selesai pada unit kandang ini.
+                                </td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -166,36 +201,70 @@
     <!-- Chart.js Injection -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function analyticsCoopFilter() {
+            const initialRecords = @json($analyticsData);
+            return {
+                selectedCoopId: 'all',
+                records: initialRecords,
+                get filteredRecords() {
+                    if (this.selectedCoopId === 'all') {
+                        return this.records;
+                    }
+                    return this.records.filter(r => String(r.coop_id) === String(this.selectedCoopId));
+                },
+                get validRecords() {
+                    return this.filteredRecords.filter(r => Number(r.ip) > 0);
+                },
+                get avgIp() {
+                    const list = this.validRecords;
+                    if (!list.length) return 0;
+                    return list.reduce((sum, r) => sum + Number(r.ip), 0) / list.length;
+                },
+                get avgFcr() {
+                    const list = this.validRecords;
+                    if (!list.length) return 0;
+                    return list.reduce((sum, r) => sum + Number(r.fcr), 0) / list.length;
+                },
+                get avgLivability() {
+                    const list = this.validRecords;
+                    if (!list.length) return 0;
+                    return list.reduce((sum, r) => sum + Number(r.livability), 0) / list.length;
+                },
+                formatDecimal(val, decimals) {
+                    return Number(val || 0).toLocaleString('en-US', {
+                        minimumFractionDigits: decimals,
+                        maximumFractionDigits: decimals
+                    });
+                },
+                selectCoop(coopId) {
+                    this.selectedCoopId = coopId;
+                    if (typeof window.updateAnalyticsIpChart === 'function') {
+                        window.updateAnalyticsIpChart(this.filteredRecords);
+                    }
+                }
+            };
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const rawData = @json($analyticsData);
-            
-            // Extract Data
-            const labels = rawData.map(d => d.flock_name);
-            const dataIP = rawData.map(d => d.ip);
-            
-            // Dynamic Colors based on IP
-            const backgroundColors = dataIP.map(ip => {
-                if(ip >= 300) return 'rgba(16, 185, 129, 0.8)'; // Emerald
-                if(ip >= 250) return 'rgba(250, 204, 21, 0.8)'; // Yellow
-                return 'rgba(244, 63, 94, 0.8)'; // Rose
-            });
+            let currentRecords = [...rawData];
 
-            const borderColors = dataIP.map(ip => {
-                if(ip >= 300) return 'rgb(16, 185, 129)'; 
-                if(ip >= 250) return 'rgb(250, 204, 21)'; 
-                return 'rgb(244, 63, 94)'; 
-            });
+            function ipColor(ip, alpha) {
+                if (ip >= 300) return alpha < 1 ? `rgba(16, 185, 129, ${alpha})` : 'rgb(16, 185, 129)';
+                if (ip >= 250) return alpha < 1 ? `rgba(250, 204, 21, ${alpha})` : 'rgb(250, 204, 21)';
+                return alpha < 1 ? `rgba(244, 63, 94, ${alpha})` : 'rgb(244, 63, 94)';
+            }
 
             const ctx = document.getElementById('ipHeatmapChart').getContext('2d');
             const ipConfig = {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: currentRecords.map(d => d.flock_name),
                     datasets: [{
                         label: 'Indeks Penampilan (IP)',
-                        data: dataIP,
-                        backgroundColor: backgroundColors,
-                        borderColor: borderColors,
+                        data: currentRecords.map(d => d.ip),
+                        backgroundColor: currentRecords.map(d => ipColor(d.ip, 0.8)),
+                        borderColor: currentRecords.map(d => ipColor(d.ip, 1)),
                         borderWidth: 1,
                         borderRadius: 6,
                         barThickness: 40,
@@ -211,8 +280,10 @@
                             boxPadding: 4,
                             callbacks: {
                                 label: function(context) {
-                                    const record = rawData[context.dataIndex];
+                                    const record = currentRecords[context.dataIndex];
+                                    if (!record) return [];
                                     return [
+                                        `Unit: ${record.coop_name}`,
                                         `IP Score: ${record.ip}`,
                                         `FCR: ${record.fcr}`,
                                         `Livability: ${record.livability}%`,
@@ -239,9 +310,19 @@
                 }
             };
 
-            window.BroilerTheme
+            const ipChart = window.BroilerTheme
                 ? window.BroilerTheme.createChart(ctx, ipConfig)
                 : new Chart(ctx, ipConfig);
+
+            window.updateAnalyticsIpChart = function(filtered) {
+                currentRecords = [...filtered];
+                if (!ipChart) return;
+                ipChart.data.labels = currentRecords.map(d => d.flock_name);
+                ipChart.data.datasets[0].data = currentRecords.map(d => d.ip);
+                ipChart.data.datasets[0].backgroundColor = currentRecords.map(d => ipColor(d.ip, 0.8));
+                ipChart.data.datasets[0].borderColor = currentRecords.map(d => ipColor(d.ip, 1));
+                ipChart.update('none');
+            };
         });
     </script>
 </x-app-layout>

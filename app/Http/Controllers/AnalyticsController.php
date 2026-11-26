@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coop;
 use App\Models\Flock;
 use App\Services\FlockMetricsService;
 use Carbon\Carbon;
@@ -11,10 +12,14 @@ class AnalyticsController extends Controller
     public function index()
     {
         // Get all closed flocks for benchmarking
-        $flocks = Flock::with(['worker', 'harvests', 'dailyRecords'])
+        $flocks = Flock::with(['coop', 'worker', 'harvests', 'dailyRecords'])
             ->where('status', 'closed')
             ->orderBy('closed_at', 'asc')
             ->get();
+
+        $coops = Coop::orderByDesc('is_headquarters')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_headquarters']);
 
         $analyticsData = [];
         $totalIP = 0;
@@ -35,6 +40,8 @@ class AnalyticsController extends Controller
             $ip = $metrics['ip'];
 
             $analyticsData[] = [
+                'coop_id' => $flock->coop_id,
+                'coop_name' => $flock->coop->name ?? 'Tanpa Unit',
                 'flock_name' => $flock->name,
                 'breed' => $flock->breed,
                 'worker_name' => $flock->worker->name ?? 'N/A',
@@ -61,6 +68,6 @@ class AnalyticsController extends Controller
             'livability' => $validFlockCount > 0 ? round($totalLivability / $validFlockCount, 2) : 0,
         ];
 
-        return view('analytics.index', compact('analyticsData', 'farmAverages'));
+        return view('analytics.index', compact('analyticsData', 'farmAverages', 'coops'));
     }
 }
