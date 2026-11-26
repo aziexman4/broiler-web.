@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'BroilerApp Pro') }}</title>
+        <title>{{ in_array(config('app.name'), ['Laravel', 'BroilerApp', 'BroilerApp PRO', 'BroilerApp Pro']) ? 'SmartCoop' : config('app.name', 'SmartCoop') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,16 +14,8 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <!-- Dark Mode FOIT Prevention -->
+        @include('partials.theme-init')
         <script>
-            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.style.backgroundColor = '#020617'; // slate-950
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.style.backgroundColor = '#f1f5f9'; // slate-100
-            }
-
             window.BroilerTheme = {
                 isDark() {
                     return document.documentElement.classList.contains('dark');
@@ -99,44 +91,33 @@
                 }
             };
         </script>
-
-
-        <style>
-            /* Anti-Flashbang (Eye-Care) Light Mode */
-            html:not(.dark) body {
-                background-color: #f1f5f9 !important; /* slate-100 */
-            }
-            html:not(.dark) .bg-white {
-                background-color: #f8fafc !important; /* slate-50 */
-            }
-            html:not(.dark) .bg-slate-50 {
-                background-color: #f1f5f9 !important; /* slate-100 */
-            }
-        </style>
     </head>
     <body 
         x-data="{ 
-            darkMode: localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches),
+            themeMode: window.SmartCoopTheme ? window.SmartCoopTheme.getMode() : 'system',
+            darkMode: window.BroilerTheme.isDark(),
+            setTheme(mode) {
+                const res = window.SmartCoopTheme.apply(mode);
+                this.themeMode = res.mode;
+                this.darkMode = res.dark;
+            },
             toggleTheme() {
-                this.darkMode = !this.darkMode;
-                localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
-                document.documentElement.classList.toggle('dark', this.darkMode);
-                document.documentElement.style.backgroundColor = this.darkMode ? '#020617' : '#f1f5f9';
-                window.dispatchEvent(new CustomEvent('theme-changed', { detail: { dark: this.darkMode } }));
+                this.setTheme(this.darkMode ? 'light' : 'dark');
             }
         }"
-        class="font-sans antialiased bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-indigo-500 selection:text-white">
+        @theme-changed.window="themeMode = $event.detail.mode; darkMode = $event.detail.dark"
+        class="font-sans antialiased bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-emerald-500 selection:text-white">
         
 
 
-        <div x-data="{ sidebarOpen: false }" class="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden transition-colors duration-200">
+        <div x-data="{ sidebarOpen: false }" class="flex h-screen bg-slate-100 dark:bg-slate-950 overflow-hidden transition-colors duration-200">
             <!-- Sidebar Navigation -->
             @include('layouts.navigation')
 
             <!-- Main Content Area -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
                 <!-- Top Header Bar -->
-                <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-10 transition-colors duration-200 shadow-md">
+                <header class="bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 z-10 transition-colors duration-200 shadow-xs">
                     <div class="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                         <!-- Mobile Hamburger Button -->
                         <div class="flex items-center md:hidden">
@@ -145,7 +126,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
-                            <span class="ms-2 font-bold text-slate-800 dark:text-white">BroilerApp Pro</span>
+                            <span class="ms-2 font-extrabold text-slate-900 dark:text-white">Smart<span class="text-emerald-600 dark:text-emerald-400">Coop</span></span>
                         </div>
 
                         <!-- Top Header Title/Context -->
@@ -157,19 +138,10 @@
 
                         <!-- User Profile Dropdown -->
                         <div class="flex items-center space-x-3 ms-auto">
-                            <!-- Dark Mode Toggle -->
-                            <button @click="toggleTheme()" type="button" :aria-pressed="darkMode.toString()" aria-label="Ganti mode tampilan" title="Ganti Light / Dark Mode" class="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors duration-200">
-                                <!-- Sun Icon (shown in dark mode) -->
-                                <svg class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.78a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.414l-.708-.707a1 1 0 010-1.414zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-2.78 4.22a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.78a1 1 0 01-1.415 0l-.707-.707a1 1 0 011.414-1.414l.708.707a1 1 0 010 1.414zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm2.78-4.22a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM10 5a5 5 0 100 10 5 5 0 000-10z" clip-rule="evenodd" />
-                                </svg>
-                                <!-- Moon Icon (shown in light mode) -->
-                                <svg class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                </svg>
-                            </button>
+                            <!-- 3-Mode Theme Switcher (Light / Dark / System) -->
+                            <x-theme-switcher />
 
-                            <span class="px-2.5 py-0.5 rounded text-xs font-semibold uppercase {{ Auth::user()->isOwner() ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' }}">
+                            <span class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase {{ Auth::user()->isOwner() ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300' }}">
                                 {{ Auth::user()->role }}
                             </span>
 
@@ -213,15 +185,15 @@
                 </header>
 
                 <!-- Scrollable Main Content -->
-                <main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors duration-200 flex flex-col">
+                <main class="flex-1 overflow-y-auto bg-slate-100 dark:bg-slate-950 transition-colors duration-200 flex flex-col">
                     <div class="flex-1">
                         {{ $slot }}
                     </div>
                     
                     <!-- Global Credit Footer -->
-                    <footer class="mt-auto py-6 px-6 sm:px-8 text-center sm:text-right border-t border-slate-200/60 dark:border-slate-800/60 mt-8">
+                    <footer class="mt-auto py-6 px-6 sm:px-8 text-center sm:text-right border-t border-slate-200/70 dark:border-slate-800/60 mt-8">
                         <p class="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
-                            Sistem Manajemen Peternakan Broiler &bull; Proyek PKL {{ date('Y') }}
+                            SmartCoop &bull; Sistem Manajemen Peternakan Broiler Hanau &bull; PKL {{ date('Y') }}
                         </p>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                             Dikembangkan oleh <span class="font-bold text-slate-700 dark:text-slate-300">M Aulia Aziz 2310020119</span> — FTI UNISKA Banjarmasin

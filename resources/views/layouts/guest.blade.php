@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'BroilerApp PRO') }}</title>
+        <title>{{ in_array(config('app.name'), ['Laravel', 'BroilerApp', 'BroilerApp PRO', 'BroilerApp Pro']) ? 'SmartCoop' : config('app.name', 'SmartCoop') }} — Manajemen Broiler</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -14,19 +14,17 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-        <!-- Dark Mode FOIT Prevention -->
-        <script>
-            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.style.backgroundColor = '#020617'; // slate-950
-            } else {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.style.backgroundColor = '#f1f5f9'; // slate-100
-            }
-        </script>
-
+        @include('partials.theme-init')
     </head>
-    <body class="font-sans text-slate-900 dark:text-slate-100 antialiased bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+    <body x-data="{
+            themeMode: window.SmartCoopTheme ? window.SmartCoopTheme.getMode() : 'system',
+            setTheme(mode) {
+                const res = window.SmartCoopTheme.apply(mode);
+                this.themeMode = res.mode;
+            }
+        }"
+        @theme-changed.window="themeMode = $event.detail.mode"
+        class="font-sans text-slate-900 dark:text-slate-100 antialiased bg-slate-100 dark:bg-slate-950 selection:bg-emerald-500 selection:text-white transition-colors duration-200">
         {{ $slot }}
     </body>
 </html>

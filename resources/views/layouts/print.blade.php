@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Laporan') - BroilerApp PRO</title>
+    <title>@yield('title', 'Laporan') - SmartCoop</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <style>
@@ -145,7 +145,7 @@
     @if(empty($isPdf))
     <!-- Floating Toolbar -->
     <div class="print-toolbar no-print">
-        <div class="toolbar-title">📄 Pratinjau Laporan — @yield('title', 'BroilerApp PRO')</div>
+        <div class="toolbar-title">📄 Pratinjau Laporan — @yield('title', 'SmartCoop')</div>
         <div class="toolbar-actions">
             @if(!empty($pdfDownloadUrl))
                 <a class="btn-download" href="{{ $pdfDownloadUrl }}" style="background:#059669;text-decoration:none;">
