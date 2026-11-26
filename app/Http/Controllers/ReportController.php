@@ -184,4 +184,44 @@ class ReportController extends Controller
 
         return view('reports.inventory-audit-preview', $viewData);
     }
+
+    /**
+     * Preview Analytics & Benchmarking Report as printable HTML or download as PDF.
+     */
+    public function analyticsPreview(Request $request)
+    {
+        Gate::authorize('manage-enterprise');
+
+        $selectedCoop = $request->filled('coop_id')
+            ? Coop::find((int) $request->input('coop_id'))
+            : null;
+        $coop = $selectedCoop ?? Coop::where('is_headquarters', true)->first();
+
+        $report = FlockMetricsService::buildBenchmarkReport($selectedCoop?->id);
+        $viewData = [
+            'coop' => $coop,
+            'selectedCoop' => $selectedCoop,
+            'unitLabel' => $selectedCoop ? $selectedCoop->name : 'Seluruh Unit Kandang',
+            'analyticsData' => $report['analyticsData'],
+            'farmAverages' => $report['farmAverages'],
+            'coopBenchmarks' => $report['coopBenchmarks'],
+        ];
+
+        if ($selectedCoop && $selectedCoop->manager_name) {
+            $viewData['leftSignerName'] = $selectedCoop->manager_name;
+            $viewData['leftSignerPrefix'] = 'Mengetahui Unit,';
+            $viewData['leftSignerRole'] = 'Penanggung Jawab Kandang';
+            $viewData['leftSignerUnit'] = $selectedCoop->name;
+        }
+
+        if ($request->boolean('download')) {
+            $scopeSlug = $selectedCoop ? Str::slug($selectedCoop->name) : 'semua_unit';
+            $filename = 'laporan_analitik_benchmarking_' . $scopeSlug . '_' . date('Y-m-d') . '.pdf';
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.analytics-preview', $viewData + ['isPdf' => true])
+                ->setPaper('a4', 'portrait')
+                ->download($filename);
+        }
+
+        return view('reports.analytics-preview', $viewData);
+    }
 }

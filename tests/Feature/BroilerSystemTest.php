@@ -1055,4 +1055,120 @@ class BroilerSystemTest extends TestCase
         $auditPdf->assertOk();
         $this->assertStringStartsWith('%PDF-', $auditPdf->getContent());
     }
+
+    public function test_analytics_coop_benchmarks_profit_sorting_and_a4_pdf_preview(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Owner Analitik']);
+        $workerA = User::factory()->create(['role' => 'worker', 'name' => 'Worker Hanau']);
+        $workerB = User::factory()->create(['role' => 'worker', 'name' => 'Worker Seruyan']);
+
+        $coopA = Coop::create([
+            'name' => 'Kandang Hanau Uji',
+            'address' => 'Hanau',
+            'manager_name' => 'Harries PJ',
+            'is_headquarters' => true,
+        ]);
+
+        $coopB = Coop::create([
+            'name' => 'Kandang Seruyan Uji',
+            'address' => 'Seruyan',
+            'manager_name' => 'Danang PJ',
+            'is_headquarters' => false,
+        ]);
+
+        $flockA = Flock::create([
+            'coop_id' => $coopA->id,
+            'name' => 'Siklus Hanau S1',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-08-01',
+            'closed_at' => '2026-09-05',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $workerA->id,
+        ]);
+        $flockA->dailyRecords()->create([
+            'record_date' => '2026-09-05',
+            'mortality' => 20,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 500,
+            'feed_starter_kg' => 1000,
+            'feed_finisher_kg' => 1500,
+            'average_weight_gram' => 2000,
+        ]);
+        $flockA->harvests()->create([
+            'harvest_date' => '2026-09-05',
+            'total_chickens_sold' => 980,
+            'total_weight_kg' => 1960,
+            'buyer_name' => 'PT Jaya',
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'total_feed_cost' => 27000000,
+            'gross_revenue' => 45080000,
+            'net_profit' => 10080000,
+        ]);
+
+        $flockB = Flock::create([
+            'coop_id' => $coopB->id,
+            'name' => 'Siklus Seruyan S1',
+            'breed' => 'Ross 308',
+            'start_date' => '2026-09-10',
+            'closed_at' => '2026-10-15',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $workerB->id,
+        ]);
+        $flockB->dailyRecords()->create([
+            'record_date' => '2026-10-15',
+            'mortality' => 50,
+            'culling' => 10,
+            'feed_pre_starter_kg' => 600,
+            'feed_starter_kg' => 1100,
+            'feed_finisher_kg' => 1700,
+            'average_weight_gram' => 1800,
+        ]);
+        $flockB->harvests()->create([
+            'harvest_date' => '2026-10-15',
+            'total_chickens_sold' => 940,
+            'total_weight_kg' => 1692,
+            'buyer_name' => 'PT Mitra',
+            'chicken_price_per_kg' => 22000,
+            'feed_price_per_kg' => 9000,
+            'total_feed_cost' => 30600000,
+            'gross_revenue' => 37224000,
+            'net_profit' => -1376000,
+        ]);
+
+        // Worker is blocked from enterprise analytics & report preview
+        $this->actingAs($workerA)->get(route('analytics.index'))->assertForbidden();
+        $this->actingAs($workerA)->get(route('reports.analytics'))->assertForbidden();
+
+        // Owner sees leaderboard, clickable cycle links, net profit, and target IP 300
+        $indexResponse = $this->actingAs($owner)->get(route('analytics.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Perbandingan Performa Antar Unit Kandang');
+        $indexResponse->assertSee('Siklus Hanau S1');
+        $indexResponse->assertSee('Siklus Seruyan S1');
+        $indexResponse->assertSee(route('flocks.show', $flockA));
+        $indexResponse->assertSee('fcrWeightChart');
+        $indexResponse->assertViewHas('coopBenchmarks', function ($benchmarks) use ($coopA) {
+            return count($benchmarks) === 2 && $benchmarks[0]['coop_id'] === $coopA->id;
+        });
+
+        // Print preview & PDF export (all coops & scoped to Coop B with unit signer)
+        $previewAll = $this->actingAs($owner)->get(route('reports.analytics'));
+        $previewAll->assertOk();
+        $previewAll->assertSee('Seluruh Unit Kandang');
+        $previewAll->assertSee('Owner Analitik');
+
+        $previewScoped = $this->actingAs($owner)->get(route('reports.analytics', ['coop_id' => $coopB->id]));
+        $previewScoped->assertOk();
+        $previewScoped->assertSee('Kandang Seruyan Uji');
+        $previewScoped->assertSee('Danang PJ');
+        $previewScoped->assertSee('Siklus Seruyan S1');
+        $previewScoped->assertDontSee('Siklus Hanau S1');
+
+        $pdfDownload = $this->actingAs($owner)->get(route('reports.analytics', ['coop_id' => $coopA->id, 'download' => 1]));
+        $pdfDownload->assertOk();
+        $this->assertStringStartsWith('%PDF-', $pdfDownload->getContent());
+    }
 }

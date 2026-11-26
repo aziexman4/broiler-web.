@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
         // Laporan Preview (Cetak dengan Pratinjau)
         Route::get('/reports/cash-flow', [ReportController::class, 'cashFlowPreview'])->name('reports.cash-flow');
         Route::get('/reports/inventory-audit', [ReportController::class, 'inventoryAuditPreview'])->name('reports.inventory-audit');
+        Route::get('/reports/analytics', [ReportController::class, 'analyticsPreview'])->name('reports.analytics');
 
         // Modul Analitik & Benchmarking
         Route::get('/analytics', [\App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');

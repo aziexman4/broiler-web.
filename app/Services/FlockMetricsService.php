@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Coop;
 use App\Models\Flock;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -38,7 +39,10 @@ class FlockMetricsService
 
         $totalHarvestSold = (int) $harvests->sum('total_chickens_sold');
         $totalHarvestWeight = (float) $harvests->sum('total_weight_kg');
-        $totalRevenue = (float) $harvests->sum('revenue');
+        $totalRevenue = (float) $harvests->sum(
+            fn ($harvest) => (float) ($harvest->gross_revenue > 0 ? $harvest->gross_revenue : $harvest->revenue)
+        );
+        $totalNetProfit = round((float) $harvests->sum('net_profit'), 2);
 
         $fcr = $totalHarvestWeight > 0 ? round($totalFeed / $totalHarvestWeight, 3) : 0.0;
         $livability = $flock->initial_population > 0
@@ -64,6 +68,7 @@ class FlockMetricsService
             'total_harvest_sold' => $totalHarvestSold,
             'total_harvest_weight_kg' => round($totalHarvestWeight, 2),
             'total_revenue' => $totalRevenue,
+            'net_profit' => $totalNetProfit,
             'fcr' => $fcr,
             'livability' => $livability,
             'avg_weight_kg' => $avgWeightKg,
@@ -96,5 +101,108 @@ class FlockMetricsService
             'bonus_tier_label' => $bonusTierLabel,
             'recommended_bonus' => (int) round($baseSalary * ($bonusPercentage / 100)),
         ];
+    }
+
+    /**
+     * Build shared closed-flock benchmarking data, farm averages, and per-coop leaderboard.
+     */
+    public static function buildBenchmarkReport(?int $coopId = null): array
+    {
+        $coops = Coop::orderByDesc('is_headquarters')
+            ->orderBy('name')
+            ->get(['id', 'name', 'manager_name', 'is_headquarters']);
+
+        $flocks = Flock::with(['coop', 'worker', 'harvests', 'dailyRecords'])
+            ->where('status', 'closed')
+            ->when($coopId !== null, fn ($query) => $query->where('coop_id', $coopId))
+            ->orderBy('closed_at', 'asc')
+            ->get();
+
+        $analyticsData = [];
+        $totalIP = 0.0;
+        $totalFCR = 0.0;
+        $totalLivability = 0.0;
+        $totalAvgWeight = 0.0;
+        $totalNetProfit = 0.0;
+        $validFlockCount = 0;
+
+        foreach ($flocks as $flock) {
+            $harvests = $flock->harvests;
+            if ($harvests->isEmpty()) {
+                continue;
+            }
+
+            $metrics = self::calculateForFlock($flock, $flock->dailyRecords, $harvests);
+            $bonusTier = self::evaluateIpBonus($metrics['ip'], 0);
+            $closedCarbon = $flock->closed_at ? Carbon::parse($flock->closed_at) : Carbon::parse($harvests->max('harvest_date'));
+
+            $row = [
+                'flock_id' => $flock->id,
+                'coop_id' => $flock->coop_id,
+                'coop_name' => $flock->coop->name ?? 'Tanpa Unit',
+                'flock_name' => $flock->name,
+                'breed' => $flock->breed,
+                'worker_name' => $flock->worker->name ?? 'N/A',
+                'start_date' => Carbon::parse($flock->start_date)->format('d M Y'),
+                'closed_at' => $closedCarbon->format('d M Y'),
+                'closed_timestamp' => $closedCarbon->timestamp,
+                'harvest_age' => $metrics['harvest_age'],
+                'livability' => $metrics['livability'],
+                'avg_weight_kg' => $metrics['avg_weight_kg'],
+                'fcr' => $metrics['fcr'],
+                'ip' => $metrics['ip'],
+                'bonus_tier_label' => $bonusTier['bonus_tier_label'],
+                'bonus_percentage' => $bonusTier['bonus_percentage'],
+                'gross_revenue' => $metrics['total_revenue'],
+                'net_profit' => $metrics['net_profit'],
+            ];
+
+            $analyticsData[] = $row;
+            $totalNetProfit += $metrics['net_profit'];
+
+            if ($metrics['ip'] > 0) {
+                $totalIP += $metrics['ip'];
+                $totalFCR += $metrics['fcr'];
+                $totalLivability += $metrics['livability'];
+                $totalAvgWeight += $metrics['avg_weight_kg'];
+                $validFlockCount++;
+            }
+        }
+
+        $farmAverages = [
+            'ip' => $validFlockCount > 0 ? round($totalIP / $validFlockCount, 2) : 0.0,
+            'fcr' => $validFlockCount > 0 ? round($totalFCR / $validFlockCount, 3) : 0.0,
+            'livability' => $validFlockCount > 0 ? round($totalLivability / $validFlockCount, 2) : 0.0,
+            'avg_weight_kg' => $validFlockCount > 0 ? round($totalAvgWeight / $validFlockCount, 2) : 0.0,
+            'total_net_profit' => round($totalNetProfit, 2),
+            'cycles_count' => count($analyticsData),
+        ];
+
+        $recordsByCoop = collect($analyticsData)->groupBy('coop_id');
+        $coopBenchmarks = $coops
+            ->filter(fn ($coop) => $coopId === null || (int) $coop->id === $coopId)
+            ->map(function ($coop) use ($recordsByCoop) {
+                $unitRows = $recordsByCoop->get($coop->id, collect());
+                $validRows = $unitRows->filter(fn ($item) => $item['ip'] > 0);
+                $validCount = $validRows->count();
+
+                return [
+                    'coop_id' => $coop->id,
+                    'coop_name' => $coop->name,
+                    'manager_name' => $coop->manager_name ?? '-',
+                    'is_headquarters' => (bool) $coop->is_headquarters,
+                    'cycles_count' => $unitRows->count(),
+                    'avg_ip' => $validCount > 0 ? round($validRows->avg('ip'), 2) : 0.0,
+                    'avg_fcr' => $validCount > 0 ? round($validRows->avg('fcr'), 3) : 0.0,
+                    'avg_livability' => $validCount > 0 ? round($validRows->avg('livability'), 2) : 0.0,
+                    'avg_weight_kg' => $validCount > 0 ? round($validRows->avg('avg_weight_kg'), 2) : 0.0,
+                    'total_net_profit' => round((float) $unitRows->sum('net_profit'), 2),
+                ];
+            })
+            ->sortByDesc('avg_ip')
+            ->values()
+            ->all();
+
+        return compact('analyticsData', 'farmAverages', 'coopBenchmarks', 'coops');
     }
 }
