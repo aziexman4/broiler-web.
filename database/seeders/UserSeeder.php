@@ -13,46 +13,49 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1 Owner Account
-        User::updateOrCreate(
-            ['email' => 'owner@smartcoop.com'],
+        $accounts = [
             [
+                'email' => 'owner@smartcoop.com',
                 'name' => 'Owner SmartCoop',
-                'password' => Hash::make('password'),
                 'role' => 'owner',
                 'base_salary' => 5000000,
-            ]
-        );
-
-        // 3 Worker Accounts
-        User::updateOrCreate(
-            ['email' => 'harries@smartcoop.com'],
+            ],
             [
+                'email' => 'harries@smartcoop.com',
                 'name' => 'Muhammad Harries Rasyadi',
-                'password' => Hash::make('password'),
                 'role' => 'worker',
                 'base_salary' => 2800000,
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'danang@smartcoop.com'],
+            ],
             [
+                'email' => 'danang@smartcoop.com',
                 'name' => 'Danang Onky Romadhoni',
-                'password' => Hash::make('password'),
                 'role' => 'worker',
                 'base_salary' => 3000000,
-            ]
-        );
-
-        User::updateOrCreate(
-            ['email' => 'mujawiri@smartcoop.com'],
+            ],
             [
+                'email' => 'mujawiri@smartcoop.com',
                 'name' => 'Mujawiri Apandie',
-                'password' => Hash::make('password'),
                 'role' => 'worker',
                 'base_salary' => 2700000,
-            ]
-        );
+            ],
+        ];
+
+        $verifiedAt = now();
+
+        foreach ($accounts as $account) {
+            $user = User::updateOrCreate(
+                ['email' => $account['email']],
+                [
+                    'name' => $account['name'],
+                    'password' => Hash::make('password'),
+                    'role' => $account['role'],
+                    'base_salary' => $account['base_salary'],
+                ]
+            );
+
+            if ($user->email_verified_at === null) {
+                $user->forceFill(['email_verified_at' => $verifiedAt])->save();
+            }
+        }
     }
 }
