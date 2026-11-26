@@ -19,14 +19,13 @@ class FlockController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isOwner()) {
-            $flocks = Flock::with(['worker', 'coop'])->latest()->get();
-        } else {
-            $flocks = Flock::with(['worker', 'coop'])
-                ->where('worker_id', $user->id)
-                ->latest()
-                ->get();
-        }
+        $baseQuery = Flock::with(['worker', 'coop'])
+            ->when(!$user->isOwner(), fn ($query) => $query->where('worker_id', $user->id))
+            ->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+            ->orderByDesc('start_date')
+            ->orderByDesc('id');
+
+        $flocks = $baseQuery->get();
 
         $workers = User::where('role', 'worker')->get();
         $coops = $user->isOwner()
