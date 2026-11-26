@@ -1360,4 +1360,134 @@ class BroilerSystemTest extends TestCase
         $this->assertEquals(27000000.0, round((float) $flock->harvests()->sum('total_feed_cost'), 2));
         $this->assertEquals(10264000.0, round((float) $flock->harvests()->sum('net_profit'), 2));
     }
+
+    public function test_payroll_bonus_enhancements_paid_markers_profit_context_tonnage_calc_and_payslip_ip(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner', 'name' => 'Owner Payroll']);
+        $worker = User::factory()->create(['role' => 'worker', 'name' => 'Worker Teladan', 'base_salary' => 3000000]);
+
+        // Verify tonnage bonus tier formula alongside percentage formula
+        $tier400 = FlockMetricsService::evaluateIpBonus(415.5, 3000000, 4000);
+        $this->assertSame(20, $tier400['bonus_percentage']);
+        $this->assertSame(600000, $tier400['recommended_bonus']);
+        $this->assertSame(200, $tier400['tonnage_rate_per_kg']);
+        $this->assertSame(800000, $tier400['recommended_tonnage_bonus']);
+
+        $tier350 = FlockMetricsService::evaluateIpBonus(365.77, 3000000, 1960);
+        $this->assertSame(15, $tier350['bonus_percentage']);
+        $this->assertSame(450000, $tier350['recommended_bonus']);
+        $this->assertSame(150, $tier350['tonnage_rate_per_kg']);
+        $this->assertSame(294000, $tier350['recommended_tonnage_bonus']);
+
+        $coop = Coop::create([
+            'name' => 'Kandang Bonus Uji',
+            'address' => 'Hanau',
+            'manager_name' => 'Worker Teladan',
+            'is_headquarters' => true,
+        ]);
+
+        $paidFlock = Flock::create([
+            'coop_id' => $coop->id,
+            'name' => 'Siklus Lunas S1',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-08-01',
+            'closed_at' => '2026-09-04',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+        $paidFlock->dailyRecords()->create([
+            'record_date' => '2026-09-04',
+            'mortality' => 20,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 500,
+            'feed_starter_kg' => 1000,
+            'feed_finisher_kg' => 1500,
+            'average_weight_gram' => 2000,
+        ]);
+        $paidFlock->harvests()->create([
+            'harvest_date' => '2026-09-04',
+            'total_chickens_sold' => 980,
+            'total_weight_kg' => 1960,
+            'buyer_name' => 'PT Panen Satu',
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'total_feed_cost' => 27000000,
+            'gross_revenue' => 45080000,
+            'net_profit' => 10080000,
+        ]);
+
+        $unpaidFlock = Flock::create([
+            'coop_id' => $coop->id,
+            'name' => 'Siklus Siap Gaji S2',
+            'breed' => 'Cobb 500',
+            'start_date' => '2026-09-15',
+            'closed_at' => '2026-10-20',
+            'initial_population' => 1000,
+            'status' => 'closed',
+            'worker_id' => $worker->id,
+        ]);
+        $unpaidFlock->dailyRecords()->create([
+            'record_date' => '2026-10-20',
+            'mortality' => 20,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 500,
+            'feed_starter_kg' => 1000,
+            'feed_finisher_kg' => 1500,
+            'average_weight_gram' => 2000,
+        ]);
+        $unpaidFlock->harvests()->create([
+            'harvest_date' => '2026-10-20',
+            'total_chickens_sold' => 980,
+            'total_weight_kg' => 1960,
+            'buyer_name' => 'PT Panen Dua',
+            'chicken_price_per_kg' => 23000,
+            'feed_price_per_kg' => 9000,
+            'total_feed_cost' => 27000000,
+            'gross_revenue' => 45080000,
+            'net_profit' => -1250000,
+        ]);
+
+        $payroll = \App\Models\Payroll::create([
+            'user_id' => $worker->id,
+            'flock_id' => $paidFlock->id,
+            'base_salary' => 3000000,
+            'bonus_amount' => 450000,
+            'total_paid' => 3450000,
+            'payment_date' => '2026-09-06',
+        ]);
+
+        // Owner payroll index sorts unpaid cycle first, marks paid cycle, exposes net_profit & calculator modes
+        $payrollIndex = $this->actingAs($owner)->get(route('payrolls.index'));
+        $payrollIndex->assertOk();
+        $payrollIndex->assertSee('Belum Diterbitkan Gaji');
+        $payrollIndex->assertSee('[Sudah Dibayar] Siklus Lunas S1');
+        $payrollIndex->assertSee('% Gaji Pokok');
+        $payrollIndex->assertSee('Rp/Kg Panen');
+        $payrollIndex->assertViewHas('closedFlocks', function ($flocks) use ($unpaidFlock, $paidFlock) {
+            return $flocks->count() === 2
+                && $flocks->first()->id === $unpaidFlock->id
+                && $flocks->first()->is_assigned_worker_paid === false
+                && (float) $flocks->first()->net_profit === -1250000.0
+                && $flocks->last()->id === $paidFlock->id
+                && $flocks->last()->is_assigned_worker_paid === true;
+        });
+
+        // Payslip preview & PDF show actual achieved IP, FCR, and tier label without leaking farm net profit
+        $payslipHtml = $this->actingAs($worker)->get(route('payrolls.payslip', $payroll));
+        $payslipHtml->assertOk();
+        $payslipHtml->assertSee('IP 376,53');
+        $payslipHtml->assertSee('Baik (15%)');
+        $payslipHtml->assertSee('1.960,0 Kg');
+        $payslipHtml->assertDontSee('10.080.000');
+
+        $workerIndex = $this->actingAs($worker)->get(route('worker.payslips.index'));
+        $workerIndex->assertOk();
+        $workerIndex->assertSee('376,53');
+        $workerIndex->assertDontSee('10.080.000');
+
+        $payslipPdf = $this->actingAs($worker)->get(route('payrolls.payslip', ['payroll' => $payroll, 'download' => 1]));
+        $payslipPdf->assertOk();
+        $this->assertStringStartsWith('%PDF-', $payslipPdf->getContent());
+    }
 }

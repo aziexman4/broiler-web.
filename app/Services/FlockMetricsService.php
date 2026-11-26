@@ -79,21 +79,25 @@ class FlockMetricsService
     }
 
     /**
-     * Determine the tiered IP bonus percentage, label, and recommended bonus amount (Phase 2 formula).
+     * Determine the tiered IP bonus percentage, tonnage rate, label, and recommended bonus amounts.
      */
-    public static function evaluateIpBonus(float $ip, int $baseSalary): array
+    public static function evaluateIpBonus(float $ip, int $baseSalary, float $totalWeightKg = 0.0): array
     {
         if ($ip >= 400) {
             $bonusPercentage = 20;
+            $tonnageRatePerKg = 200;
             $bonusTierLabel = 'Sangat Baik';
         } elseif ($ip >= 350) {
             $bonusPercentage = 15;
+            $tonnageRatePerKg = 150;
             $bonusTierLabel = 'Baik';
         } elseif ($ip >= 300) {
             $bonusPercentage = 10;
+            $tonnageRatePerKg = 100;
             $bonusTierLabel = 'Cukup / Standar';
         } else {
             $bonusPercentage = 0;
+            $tonnageRatePerKg = 0;
             $bonusTierLabel = 'Kurang';
         }
 
@@ -101,6 +105,8 @@ class FlockMetricsService
             'bonus_percentage' => $bonusPercentage,
             'bonus_tier_label' => $bonusTierLabel,
             'recommended_bonus' => (int) round($baseSalary * ($bonusPercentage / 100)),
+            'tonnage_rate_per_kg' => $tonnageRatePerKg,
+            'recommended_tonnage_bonus' => (int) round($totalWeightKg * $tonnageRatePerKg),
         ];
     }
 

@@ -1,5 +1,11 @@
 @php
     $unitCoop = $coop ?? $payroll->flock?->coop;
+    $resolvedMetrics = $flockMetrics ?? ($payroll->flock ? \App\Services\FlockMetricsService::calculateForFlock($payroll->flock) : null);
+    $resolvedBonusEval = $bonusEval ?? ($resolvedMetrics
+        ? \App\Services\FlockMetricsService::evaluateIpBonus($resolvedMetrics['ip'], (int) $payroll->base_salary, (float) $resolvedMetrics['total_harvest_weight_kg'])
+        : null);
+    $achievedIp = (float) ($resolvedMetrics['ip'] ?? 0);
+    $hasActualIp = $achievedIp > 0;
 @endphp
 @extends('layouts.print', [
     'coop' => $unitCoop,
@@ -19,7 +25,7 @@
     <div class="doc-subtitle">No. Slip: PAY-{{ str_pad($payroll->id, 5, '0', STR_PAD_LEFT) }} | Tanggal: {{ \Carbon\Carbon::parse($payroll->payment_date)->format('d M Y') }}</div>
 
     <!-- Employee Identity -->
-    <div class="section-title">Identitas Pekerja</div>
+    <div class="section-title">Identitas Pekerja &amp; Siklus Kandang</div>
     <table class="data-table">
         <tr>
             <th style="width:25%">Nama Lengkap</th>
@@ -30,7 +36,7 @@
         <tr>
             <th>Jabatan / Role</th>
             <td>{{ ucfirst($payroll->user->role) }}</td>
-            <th>Kandang Tugas</th>
+            <th>Kandang / Siklus</th>
             <td class="font-bold">{{ $payroll->flock ? $payroll->flock->name : '-' }}</td>
         </tr>
         <tr>
@@ -39,6 +45,14 @@
             <th>Tanggal Bayar</th>
             <td>{{ \Carbon\Carbon::parse($payroll->payment_date)->format('d M Y') }}</td>
         </tr>
+        @if($hasActualIp)
+            <tr>
+                <th>Capaian IP &amp; FCR</th>
+                <td class="font-bold">IP {{ number_format($achievedIp, 2, ',', '.') }} | FCR {{ number_format($resolvedMetrics['fcr'], 3, ',', '.') }}</td>
+                <th>Tonase &amp; Daya Hidup</th>
+                <td>{{ number_format($resolvedMetrics['total_harvest_weight_kg'], 1, ',', '.') }} Kg ({{ number_format($resolvedMetrics['livability'], 2, ',', '.') }}%)</td>
+            </tr>
+        @endif
     </table>
 
     <!-- Salary Breakdown -->
@@ -53,11 +67,34 @@
         </tr>
         <tr>
             <td style="padding-left:20px">
-                Bonus Performa Panen
-                @if($payroll->bonus_amount > 0)
-                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#dcfce7;color:#166534;margin-left:6px">IP ≥ 300 ✓</span>
-                @else
-                    <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:6px">IP < 300</span>
+                <div>
+                    Bonus Performa Panen
+                    @if($hasActualIp)
+                        @if($achievedIp >= 300 && $payroll->bonus_amount > 0)
+                            <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:700;background:#dcfce7;color:#166534;margin-left:6px">
+                                IP {{ number_format($achievedIp, 2, ',', '.') }} — {{ $resolvedBonusEval['bonus_tier_label'] }} ({{ $resolvedBonusEval['bonus_percentage'] }}%) ✓
+                            </span>
+                        @elseif($payroll->bonus_amount > 0)
+                            <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:700;background:#dcfce7;color:#166534;margin-left:6px">
+                                IP {{ number_format($achievedIp, 2, ',', '.') }} — Insentif Kebijakan ✓
+                            </span>
+                        @else
+                            <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:700;background:#fef3c7;color:#92400e;margin-left:6px">
+                                IP {{ number_format($achievedIp, 2, ',', '.') }} — {{ $resolvedBonusEval['bonus_tier_label'] }} (0%)
+                            </span>
+                        @endif
+                    @else
+                        @if($payroll->bonus_amount > 0)
+                            <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#dcfce7;color:#166534;margin-left:6px">IP &ge; 300 ✓</span>
+                        @else
+                            <span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:6px">IP &lt; 300</span>
+                        @endif
+                    @endif
+                </div>
+                @if($hasActualIp)
+                    <div style="font-size:8.5px;color:#64748b;margin-top:2px">
+                        Evaluasi Panen ({{ $resolvedMetrics['harvest_age'] }} hari): {{ number_format($resolvedMetrics['total_harvest_sold'], 0, ',', '.') }} ekor terjual, bobot rata-rata {{ number_format($resolvedMetrics['avg_weight_kg'], 2, ',', '.') }} Kg/ekor.
+                    </div>
                 @endif
             </td>
             <td class="text-right {{ $payroll->bonus_amount > 0 ? 'text-emerald font-bold' : '' }}">Rp {{ number_format($payroll->bonus_amount, 0, ',', '.') }}</td>
@@ -70,6 +107,6 @@
     </table>
 
     <div style="margin-top:20px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:9px;color:#64748b;line-height:1.6">
-        <strong>Catatan Skema Bonus Performa (IP):</strong> Bonus performa dihitung dari persentase gaji pokok berdasarkan capaian Indeks Performa (IP) kandang: <strong>IP ≥ 400 (20%) | IP 350–399 (15%) | IP 300–349 (10%) | IP < 300 (0%)</strong>. Slip ini berlaku sebagai bukti pembayaran yang sah.
+        <strong>Catatan Skema Bonus Performa (IP):</strong> Standar bonus dihitung berdasarkan capaian Indeks Performa (IP) siklus kandang: <strong>IP &ge; 400 (20% Gaji Pokok / Rp200/kg) | IP 350–399 (15% / Rp150/kg) | IP 300–349 (10% / Rp100/kg) | IP &lt; 300 (0%)</strong>, dengan persetujuan akhir Pemilik. Slip ini berlaku sebagai bukti pembayaran yang sah.
     </div>
 @endsection

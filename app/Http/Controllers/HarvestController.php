@@ -259,10 +259,10 @@ class HarvestController extends Controller
         // Financials
         $docPrice = (float) (SystemSetting::where('key', 'doc_price')->value('value') ?? 8000);
         $totalDocCost = $flock->initial_population * $docPrice;
-        
+
         $totalFeedCost = (float) $flock->harvests->sum('total_feed_cost');
         $grossRevenue = (float) $flock->harvests->sum('gross_revenue');
-        
+
         // OPEX (Labor)
         $laborCost = (float) Payroll::where('flock_id', $flock->id)->sum('total_paid');
 
@@ -274,10 +274,28 @@ class HarvestController extends Controller
         $bepPricePerKg = $totalHarvestWeight > 0 ? round($totalExpenses / $totalHarvestWeight, 2) : 0;
 
         $viewData = compact(
-            'flock', 'coop', 'harvest', 'livePopulation', 'totalMortality', 'totalCulling',
-            'totalFeed', 'fcr', 'avgWeight', 'livability', 'harvestAge', 'ip',
-            'docPrice', 'totalDocCost', 'totalFeedCost', 'grossRevenue', 'laborCost',
-            'cogs', 'totalExpenses', 'trueNetProfit', 'profitMargin', 'bepPricePerKg'
+            'flock',
+            'coop',
+            'harvest',
+            'livePopulation',
+            'totalMortality',
+            'totalCulling',
+            'totalFeed',
+            'fcr',
+            'avgWeight',
+            'livability',
+            'harvestAge',
+            'ip',
+            'docPrice',
+            'totalDocCost',
+            'totalFeedCost',
+            'grossRevenue',
+            'laborCost',
+            'cogs',
+            'totalExpenses',
+            'trueNetProfit',
+            'profitMargin',
+            'bepPricePerKg'
         );
 
         if ($request->boolean('download')) {

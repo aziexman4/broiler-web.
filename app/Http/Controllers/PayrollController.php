@@ -24,34 +24,63 @@ class PayrollController extends Controller
             $workers = User::all();
         }
 
-        // Fetch closed flocks with worker, harvests, and daily records
-        $closedFlocks = Flock::with(['worker', 'harvests', 'dailyRecords'])
+        // Fetch closed flocks with worker, coop, harvests, daily records, and issued payrolls
+        $closedFlocks = Flock::with(['worker', 'coop', 'harvests', 'dailyRecords', 'payrolls.user'])
             ->where('status', 'closed')
+            ->orderByDesc('closed_at')
             ->orderBy('name', 'asc')
             ->get();
 
         foreach ($closedFlocks as $flock) {
             $metrics = $this->calculateFlockIpAndBonus($flock, $flock->worker);
+            $paidWorkerIds = $flock->payrolls
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
 
             $flock->worker_name = $flock->worker->name ?? 'Belum Ditugaskan';
+            $flock->coop_name = $flock->coop->name ?? 'Tanpa Unit';
             $flock->worker_base_salary = $metrics['base_salary'];
             $flock->total_chickens_sold = $metrics['total_chickens_sold'];
             $flock->total_weight_kg = $metrics['total_weight_kg'];
             $flock->total_feed_kg = $metrics['total_feed_kg'];
+            $flock->livability = $metrics['livability'];
             $flock->harvest_age = $metrics['harvest_age'];
             $flock->achieved_fcr = $metrics['fcr'];
             $flock->achieved_ip = $metrics['ip'];
+            $flock->net_profit = $metrics['net_profit'];
             $flock->bonus_percentage = $metrics['bonus_percentage'];
             $flock->bonus_tier_label = $metrics['bonus_tier_label'];
             $flock->recommended_bonus = $metrics['recommended_bonus'];
+            $flock->tonnage_rate_per_kg = $metrics['tonnage_rate_per_kg'];
+            $flock->recommended_tonnage_bonus = $metrics['recommended_tonnage_bonus'];
+            $flock->paid_worker_ids = $paidWorkerIds;
+            $flock->is_assigned_worker_paid = $flock->worker_id
+                ? in_array((int) $flock->worker_id, $paidWorkerIds, true)
+                : $flock->payrolls->isNotEmpty();
         }
 
-        // Fetch payroll histories eager loading user & flock
-        $payrolls = Payroll::with(['user', 'flock'])
+        // Put unpaid closed cycles at the top so Owner sees ready-to-pay cycles first
+        $closedFlocks = $closedFlocks->sortBy(fn ($f) => $f->is_assigned_worker_paid ? 1 : 0)->values();
+
+        // Fetch payroll histories eager loading user & flock performance context
+        $payrolls = Payroll::with(['user', 'flock.coop', 'flock.harvests', 'flock.dailyRecords'])
             ->orderBy('payment_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
+
+        $payrolls->getCollection()->transform(function (Payroll $payroll) {
+            if ($payroll->flock) {
+                $m = FlockMetricsService::calculateForFlock($payroll->flock, $payroll->flock->dailyRecords, $payroll->flock->harvests);
+                $tier = FlockMetricsService::evaluateIpBonus($m['ip'], (int) $payroll->base_salary, (float) $m['total_harvest_weight_kg']);
+                $payroll->achieved_ip = $m['ip'];
+                $payroll->bonus_tier_label = $tier['bonus_tier_label'];
+                $payroll->bonus_percentage = $tier['bonus_percentage'];
+            }
+            return $payroll;
+        });
 
         return view('payrolls.index', compact('workers', 'closedFlocks', 'payrolls'));
     }
@@ -137,25 +166,29 @@ class PayrollController extends Controller
     }
 
     /**
-     * Calculate productivity metrics (FCR, IP) and bonus tier for a closed flock.
+     * Calculate productivity metrics (FCR, IP, Net Profit) and bonus tiers for a closed flock.
      */
     private function calculateFlockIpAndBonus(Flock $flock, ?User $worker = null): array
     {
-        $metrics = FlockMetricsService::calculateForFlock($flock);
+        $metrics = FlockMetricsService::calculateForFlock($flock, $flock->dailyRecords, $flock->harvests);
         $baseSalary = ($worker && $worker->base_salary > 0) ? (int) $worker->base_salary : 2500000;
-        $bonus = FlockMetricsService::evaluateIpBonus($metrics['ip'], $baseSalary);
+        $bonus = FlockMetricsService::evaluateIpBonus($metrics['ip'], $baseSalary, (float) $metrics['total_harvest_weight_kg']);
 
         return [
             'total_chickens_sold' => $metrics['total_harvest_sold'],
             'total_weight_kg' => $metrics['total_harvest_weight_kg'],
             'total_feed_kg' => $metrics['total_feed_kg'],
+            'livability' => $metrics['livability'],
             'harvest_age' => $metrics['harvest_age'],
             'fcr' => $metrics['fcr'],
             'ip' => $metrics['ip'],
+            'net_profit' => $metrics['net_profit'],
             'base_salary' => $baseSalary,
             'bonus_percentage' => $bonus['bonus_percentage'],
             'bonus_tier_label' => $bonus['bonus_tier_label'],
             'recommended_bonus' => $bonus['recommended_bonus'],
+            'tonnage_rate_per_kg' => $bonus['tonnage_rate_per_kg'],
+            'recommended_tonnage_bonus' => $bonus['recommended_tonnage_bonus'],
         ];
     }
 
@@ -166,11 +199,21 @@ class PayrollController extends Controller
     {
         $user = $request->user();
 
-        $payrolls = Payroll::with(['user', 'flock.coop'])
+        $payrolls = Payroll::with(['user', 'flock.coop', 'flock.harvests', 'flock.dailyRecords'])
             ->where('user_id', $user->id)
             ->orderBy('payment_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get();
+            ->get()
+            ->map(function (Payroll $payroll) {
+                if ($payroll->flock) {
+                    $m = FlockMetricsService::calculateForFlock($payroll->flock, $payroll->flock->dailyRecords, $payroll->flock->harvests);
+                    $tier = FlockMetricsService::evaluateIpBonus($m['ip'], (int) $payroll->base_salary, (float) $m['total_harvest_weight_kg']);
+                    $payroll->achieved_ip = $m['ip'];
+                    $payroll->bonus_tier_label = $tier['bonus_tier_label'];
+                    $payroll->bonus_percentage = $tier['bonus_percentage'];
+                }
+                return $payroll;
+            });
 
         return view('payrolls.worker-index', compact('payrolls'));
     }
@@ -187,16 +230,24 @@ class PayrollController extends Controller
             'Anda tidak memiliki izin mengakses slip gaji pekerja lain.'
         );
 
-        $payroll->load(['user', 'flock.coop']);
+        $payroll->load(['user', 'flock.coop', 'flock.harvests', 'flock.dailyRecords']);
         $coop = $payroll->flock?->coop;
+        $flockMetrics = $payroll->flock
+            ? FlockMetricsService::calculateForFlock($payroll->flock, $payroll->flock->dailyRecords, $payroll->flock->harvests)
+            : null;
+        $bonusEval = $flockMetrics
+            ? FlockMetricsService::evaluateIpBonus($flockMetrics['ip'], (int) $payroll->base_salary, (float) $flockMetrics['total_harvest_weight_kg'])
+            : null;
+
+        $viewData = compact('payroll', 'coop', 'flockMetrics', 'bonusEval');
 
         if ($request->boolean('download')) {
             $slipNo = 'PAY-' . str_pad((string) $payroll->id, 5, '0', STR_PAD_LEFT);
-            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.payslip-preview', compact('payroll', 'coop') + ['isPdf' => true])
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.payslip-preview', $viewData + ['isPdf' => true])
                 ->setPaper('a4', 'portrait')
                 ->download("slip_gaji_{$slipNo}.pdf");
         }
 
-        return view('reports.payslip-preview', compact('payroll', 'coop'));
+        return view('reports.payslip-preview', $viewData);
     }
 }

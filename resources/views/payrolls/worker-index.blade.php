@@ -3,14 +3,14 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
                 <h2 class="font-bold text-xl text-slate-800 dark:text-slate-100 leading-tight flex items-center gap-2">
-                    <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Slip Gaji Saya &amp; Riwayat Bonus IP
                 </h2>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Pekerja: <span class="font-semibold text-slate-700 dark:text-slate-200">{{ Auth::user()->name }}</span>
-                    &bull; Acuan Gaji Pokok: <span class="font-semibold text-indigo-600 dark:text-indigo-400">Rp {{ number_format(Auth::user()->base_salary ?? 0, 0, ',', '.') }}</span>
+                    &bull; Acuan Gaji Pokok: <span class="font-semibold text-emerald-600 dark:text-emerald-400">Rp {{ number_format(Auth::user()->base_salary ?? 0, 0, ',', '.') }}</span>
                 </p>
             </div>
         </div>
@@ -40,12 +40,12 @@
                     <div class="mt-2 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
                         + Rp {{ number_format($totalBonusSum, 0, ',', '.') }}
                     </div>
-                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Berdasarkan pencapaian Indeks Performansi</div>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Berdasarkan pencapaian Indeks Performa</div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 p-5">
                     <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jumlah Slip Terbit</div>
-                    <div class="mt-2 text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                    <div class="mt-2 text-2xl font-extrabold text-teal-600 dark:text-teal-400">
                         {{ number_format($totalCount) }} <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Siklus</span>
                     </div>
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">Siap dicetak dalam format A4</div>
@@ -56,11 +56,11 @@
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-md border border-slate-200/80 dark:border-slate-700 p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div class="text-xs text-slate-600 dark:text-slate-300 font-medium">
                     <span class="font-bold text-slate-800 dark:text-slate-100">Skema Bonus Berjenjang (IP Panen):</span>
-                    Bonus dihitung dari persentase gaji pokok sesuai pencapaian IP kandang saat tutup buku.
+                    Bonus dihitung dari capaian Indeks Performa (IP) kandang saat panen &amp; tutup buku.
                 </div>
                 <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold">
                     <span class="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">IP &ge; 400: +20%</span>
-                    <span class="px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">IP 350–399: +15%</span>
+                    <span class="px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">IP 350–399: +15%</span>
                     <span class="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">IP 300–349: +10%</span>
                     <span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">IP &lt; 300: 0%</span>
                 </div>
@@ -94,14 +94,17 @@
                                         {{ \Carbon\Carbon::parse($payroll->payment_date)->format('d M Y') }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                             {{ $payroll->flock->name ?? '-' }}
                                         </span>
-                                        @if($payroll->flock?->coop)
-                                            <div class="text-[11px] text-slate-400 dark:text-slate-400 mt-1">
-                                                📍 {{ $payroll->flock->coop->name }}
-                                            </div>
-                                        @endif
+                                        <div class="text-[11px] text-slate-400 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
+                                            @if($payroll->flock?->coop)
+                                                <span>📍 {{ $payroll->flock->coop->name }}</span>
+                                            @endif
+                                            @if(($payroll->achieved_ip ?? 0) > 0)
+                                                <span>&bull; IP <strong>{{ number_format($payroll->achieved_ip, 2, ',', '.') }}</strong> ({{ $payroll->bonus_tier_label }})</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         Rp {{ number_format($payroll->base_salary, 0, ',', '.') }}
@@ -119,7 +122,7 @@
                                         Rp {{ number_format($payroll->total_paid, 0, ',', '.') }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <a href="{{ route('payrolls.payslip', $payroll) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/70 rounded-lg border border-indigo-200 dark:border-indigo-800 transition-colors">
+                                        <a href="{{ route('payrolls.payslip', $payroll) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/70 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors">
                                             🖨️ Cetak Slip
                                         </a>
                                     </td>
