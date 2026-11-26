@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Coop;
 use App\Models\Flock;
+use App\Models\SystemSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -203,6 +204,107 @@ class FlockMetricsService
             ->values()
             ->all();
 
-        return compact('analyticsData', 'farmAverages', 'coopBenchmarks', 'coops');
+        $unitHistIpMap = collect($coopBenchmarks)->pluck('avg_ip', 'coop_id');
+
+        $settings = SystemSetting::whereIn('key', ['global_market_price', 'doc_price', 'feed_price'])
+            ->pluck('value', 'key');
+        $marketPrice = (int) ($settings['global_market_price'] ?? 23000);
+        $docPrice = (int) ($settings['doc_price'] ?? 8000);
+        $feedPrice = (int) ($settings['feed_price'] ?? 9000);
+
+        $activeFlocks = Flock::with(['coop', 'worker', 'dailyRecords', 'harvests'])
+            ->where('status', 'active')
+            ->when($coopId !== null, fn ($query) => $query->where('coop_id', $coopId))
+            ->orderBy('start_date', 'asc')
+            ->get();
+
+        $activeFlockBenchmarks = [];
+        foreach ($activeFlocks as $activeFlock) {
+            $base = self::calculateForFlock($activeFlock, $activeFlock->dailyRecords, $activeFlock->harvests);
+            $sortedDaily = $activeFlock->dailyRecords->sortBy('record_date')->values();
+            $latestDaily = $sortedDaily->last();
+            $ageDays = $base['harvest_age'];
+
+            $avgWeightGram = ($latestDaily && (int) $latestDaily->average_weight_gram > 0)
+                ? (int) $latestDaily->average_weight_gram
+                : (40 + ($ageDays * 45));
+            $avgWeightKg = round($avgWeightGram / 1000, 3);
+            $estimatedBiomassKg = round($base['live_population'] * ($avgWeightGram / 1000), 2);
+
+            $estFcr = $estimatedBiomassKg > 0
+                ? round($base['total_feed_kg'] / $estimatedBiomassKg, 3)
+                : 0.0;
+            $estIp = ($estFcr > 0 && $ageDays > 0)
+                ? round(($base['livability'] * ($avgWeightGram / 1000)) / ($estFcr * $ageDays) * 100, 2)
+                : 0.0;
+            $estBonusTier = self::evaluateIpBonus($estIp, 0);
+
+            $estimatedCost = round(($activeFlock->initial_population * $docPrice) + ($base['total_feed_kg'] * $feedPrice), 2);
+            $estimatedRevenue = round($estimatedBiomassKg * $marketPrice, 2);
+            $estimatedProfit = round($estimatedRevenue - $estimatedCost, 2);
+
+            $latestDailyMortalityPct = ($latestDaily && $activeFlock->initial_population > 0)
+                ? round(((int) $latestDaily->mortality / $activeFlock->initial_population) * 100, 2)
+                : 0.0;
+
+            $historicalCoopIp = (float) ($unitHistIpMap[$activeFlock->coop_id] ?? 0.0);
+            $ipDelta = $historicalCoopIp > 0 ? round($estIp - $historicalCoopIp, 2) : null;
+
+            $growthPoints = $sortedDaily->map(fn ($rec, $idx) => [
+                'day' => $idx + 1,
+                'date' => Carbon::parse($rec->record_date)->format('d M'),
+                'weight_gram' => (int) ($rec->average_weight_gram ?? 0),
+            ])->all();
+
+            $activeFlockBenchmarks[] = [
+                'flock_id' => $activeFlock->id,
+                'coop_id' => $activeFlock->coop_id,
+                'coop_name' => $activeFlock->coop->name ?? 'Tanpa Unit',
+                'flock_name' => $activeFlock->name,
+                'breed' => $activeFlock->breed,
+                'worker_name' => $activeFlock->worker->name ?? 'N/A',
+                'start_date' => Carbon::parse($activeFlock->start_date)->format('d M Y'),
+                'age_days' => $ageDays,
+                'progress_percent' => min(100, (int) round(($ageDays / 35) * 100)),
+                'initial_population' => (int) $activeFlock->initial_population,
+                'live_population' => $base['live_population'],
+                'livability' => $base['livability'],
+                'total_feed_kg' => $base['total_feed_kg'],
+                'avg_weight_gram' => $avgWeightGram,
+                'avg_weight_kg' => $avgWeightKg,
+                'estimated_biomass_kg' => $estimatedBiomassKg,
+                'est_fcr' => $estFcr,
+                'est_ip' => $estIp,
+                'est_bonus_tier_label' => $estBonusTier['bonus_tier_label'],
+                'historical_coop_ip' => $historicalCoopIp,
+                'ip_delta_vs_coop' => $ipDelta,
+                'estimated_cost' => $estimatedCost,
+                'estimated_revenue' => $estimatedRevenue,
+                'estimated_profit' => $estimatedProfit,
+                'is_bep_reached' => $estimatedProfit >= 0,
+                'has_mortality_warning' => $latestDailyMortalityPct > 0.5,
+                'latest_mortality_pct' => $latestDailyMortalityPct,
+                'growth_points' => $growthPoints,
+            ];
+        }
+
+        $activeCol = collect($activeFlockBenchmarks);
+        $validActive = $activeCol->filter(fn ($item) => $item['est_ip'] > 0);
+        $activeSummary = [
+            'count' => $activeCol->count(),
+            'total_live_population' => (int) $activeCol->sum('live_population'),
+            'avg_est_ip' => $validActive->isNotEmpty() ? round($validActive->avg('est_ip'), 2) : 0.0,
+            'avg_est_fcr' => $validActive->isNotEmpty() ? round($validActive->avg('est_fcr'), 3) : 0.0,
+            'total_estimated_profit' => round((float) $activeCol->sum('estimated_profit'), 2),
+        ];
+
+        return compact(
+            'analyticsData',
+            'farmAverages',
+            'coopBenchmarks',
+            'activeFlockBenchmarks',
+            'activeSummary',
+            'coops'
+        );
     }
 }

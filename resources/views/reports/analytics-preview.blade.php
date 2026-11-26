@@ -9,7 +9,7 @@
     <div class="doc-title">LAPORAN ANALITIK &amp; BENCHMARKING PERFORMA KANDANG</div>
     <div class="doc-subtitle">
         <strong>Cakupan: {{ $unitLabel }}</strong> |
-        Total {{ count($analyticsData) }} siklus tutup buku |
+        {{ count($analyticsData) }} siklus tutup buku &amp; {{ count($activeFlockBenchmarks ?? []) }} kandang aktif |
         Standar Target Bonus: IP &ge; 300
     </div>
 
@@ -125,8 +125,56 @@
         </tbody>
     </table>
 
+    @if(!empty($activeFlockBenchmarks))
+        <div class="section-title">Monitoring Performa Kandang Sedang Aktif (Estimasi Berjalan)</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:24%">Kandang &amp; Unit</th>
+                    <th style="width:16%">Pekerja</th>
+                    <th class="text-center" style="width:9%">Umur</th>
+                    <th class="text-center" style="width:12%">Populasi Hidup</th>
+                    <th class="text-center" style="width:10%">Bobot Akhir</th>
+                    <th class="text-center" style="width:8%">Est. FCR</th>
+                    <th class="text-center" style="width:8%">Est. IP</th>
+                    <th class="text-right" style="width:13%">Est. Laba/Rugi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($activeFlockBenchmarks as $act)
+                    <tr>
+                        <td>
+                            <div class="font-bold">{{ $act['flock_name'] }}</div>
+                            <div class="text-sm" style="color:#64748b">{{ $act['coop_name'] }}</div>
+                        </td>
+                        <td>
+                            <div>{{ $act['worker_name'] }}</div>
+                            <div class="text-sm" style="color:#64748b">{{ $act['breed'] }}</div>
+                        </td>
+                        <td class="text-center">{{ $act['age_days'] }} / 35 hr</td>
+                        <td class="text-center">
+                            <div>{{ number_format($act['live_population'], 0, ',', '.') }} ekor</div>
+                            <div class="text-sm" style="color:#64748b">{{ number_format($act['livability'], 2, ',', '.') }}%</div>
+                        </td>
+                        <td class="text-center">{{ number_format($act['avg_weight_gram'], 0, ',', '.') }} gr</td>
+                        <td class="text-center font-bold">{{ number_format($act['est_fcr'], 3, ',', '.') }}</td>
+                        <td class="text-center font-bold {{ $act['est_ip'] >= 300 ? 'text-emerald' : 'text-indigo' }}">
+                            {{ number_format($act['est_ip'], 2, ',', '.') }}
+                        </td>
+                        <td class="text-right font-bold {{ $act['estimated_profit'] >= 0 ? 'text-emerald' : 'text-rose' }}">
+                            Rp {{ number_format($act['estimated_profit'], 0, ',', '.') }}
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <div style="margin-top:8px;font-size:8.5px;color:#64748b">
         <strong>Keterangan Tier IP Bonus:</strong>
         IP &ge; 400 (Sangat Baik, 20%) | IP 350&ndash;399 (Baik, 15%) | IP 300&ndash;349 (Cukup / Standar, 10%) | IP &lt; 300 (Kurang, 0%).
+        @if(!empty($activeFlockBenchmarks))
+            <br><em>*Catatan: Metrik kandang aktif dihitung berdasarkan estimasi catatan harian terakhir dan dipisahkan dari rata-rata historis siklus tutup buku.</em>
+        @endif
     </div>
 @endsection

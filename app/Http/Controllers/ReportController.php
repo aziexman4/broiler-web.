@@ -205,6 +205,8 @@ class ReportController extends Controller
             'analyticsData' => $report['analyticsData'],
             'farmAverages' => $report['farmAverages'],
             'coopBenchmarks' => $report['coopBenchmarks'],
+            'activeFlockBenchmarks' => $report['activeFlockBenchmarks'],
+            'activeSummary' => $report['activeSummary'],
         ];
 
         if ($selectedCoop && $selectedCoop->manager_name) {

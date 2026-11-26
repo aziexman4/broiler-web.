@@ -1138,18 +1138,59 @@ class BroilerSystemTest extends TestCase
             'net_profit' => -1376000,
         ]);
 
+        // Active flock on Coop A (must appear in active benchmarks without polluting closed averages)
+        $activeFlock = Flock::create([
+            'coop_id' => $coopA->id,
+            'name' => 'Siklus Hanau Aktif S2',
+            'breed' => 'Cobb 500',
+            'start_date' => now()->subDays(20)->toDateString(),
+            'initial_population' => 1000,
+            'status' => 'active',
+            'worker_id' => $workerA->id,
+        ]);
+        $activeFlock->dailyRecords()->create([
+            'record_date' => now()->subDays(10)->toDateString(),
+            'mortality' => 5,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 300,
+            'feed_starter_kg' => 200,
+            'feed_finisher_kg' => 0,
+            'average_weight_gram' => 450,
+        ]);
+        $activeFlock->dailyRecords()->create([
+            'record_date' => now()->toDateString(),
+            'mortality' => 5,
+            'culling' => 0,
+            'feed_pre_starter_kg' => 0,
+            'feed_starter_kg' => 600,
+            'feed_finisher_kg' => 300,
+            'average_weight_gram' => 1150,
+        ]);
+
         // Worker is blocked from enterprise analytics & report preview
         $this->actingAs($workerA)->get(route('analytics.index'))->assertForbidden();
         $this->actingAs($workerA)->get(route('reports.analytics'))->assertForbidden();
 
-        // Owner sees leaderboard, clickable cycle links, net profit, and target IP 300
+        // Owner sees leaderboard, active monitoring, clickable cycle links, net profit, and target IP 300
         $indexResponse = $this->actingAs($owner)->get(route('analytics.index'));
         $indexResponse->assertOk();
+        $indexResponse->assertSee('Monitoring Performa Kandang Sedang Aktif');
+        $indexResponse->assertSee('Siklus Hanau Aktif S2');
+        $indexResponse->assertSee('activeGrowthChart');
+        $indexResponse->assertSee('activeVsHistIpChart');
         $indexResponse->assertSee('Perbandingan Performa Antar Unit Kandang');
         $indexResponse->assertSee('Siklus Hanau S1');
         $indexResponse->assertSee('Siklus Seruyan S1');
         $indexResponse->assertSee(route('flocks.show', $flockA));
+        $indexResponse->assertSee(route('flocks.show', $activeFlock));
         $indexResponse->assertSee('fcrWeightChart');
+        $indexResponse->assertViewHas('farmAverages', fn ($avg) => $avg['cycles_count'] === 2);
+        $indexResponse->assertViewHas('activeFlockBenchmarks', function ($activeList) use ($activeFlock) {
+            return count($activeList) === 1
+                && $activeList[0]['flock_id'] === $activeFlock->id
+                && $activeList[0]['est_ip'] > 0
+                && count($activeList[0]['growth_points']) === 2;
+        });
         $indexResponse->assertViewHas('coopBenchmarks', function ($benchmarks) use ($coopA) {
             return count($benchmarks) === 2 && $benchmarks[0]['coop_id'] === $coopA->id;
         });
@@ -1158,6 +1199,7 @@ class BroilerSystemTest extends TestCase
         $previewAll = $this->actingAs($owner)->get(route('reports.analytics'));
         $previewAll->assertOk();
         $previewAll->assertSee('Seluruh Unit Kandang');
+        $previewAll->assertSee('Siklus Hanau Aktif S2');
         $previewAll->assertSee('Owner Analitik');
 
         $previewScoped = $this->actingAs($owner)->get(route('reports.analytics', ['coop_id' => $coopB->id]));
@@ -1166,6 +1208,7 @@ class BroilerSystemTest extends TestCase
         $previewScoped->assertSee('Danang PJ');
         $previewScoped->assertSee('Siklus Seruyan S1');
         $previewScoped->assertDontSee('Siklus Hanau S1');
+        $previewScoped->assertDontSee('Siklus Hanau Aktif S2');
 
         $pdfDownload = $this->actingAs($owner)->get(route('reports.analytics', ['coop_id' => $coopA->id, 'download' => 1]));
         $pdfDownload->assertOk();
